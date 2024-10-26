@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.sairatec.arabic_names">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.sairatec.arabic_names">
     
     <application
         android:label="اسماء اولاد وبنات"

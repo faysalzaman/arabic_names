@@ -1,5 +1,6 @@
 // ignore_for_file: must_be_immutable, library_private_types_in_public_api, unused_element
 
+import 'package:arabic_names/ui_screens/names/gender_selection_screen.dart';
 import 'package:arabic_names/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -378,7 +379,7 @@ class MyDrawerWidget extends StatelessWidget {
           ListTile(
             title: const Row(
               children: [
-                Icon(Icons.home, color: Colors.white),
+                Icon(Icons.home_outlined, color: Colors.white),
                 SizedBox(width: 10),
                 Text(
                   'الرئيسية',
@@ -390,7 +391,7 @@ class MyDrawerWidget extends StatelessWidget {
               Navigator.of(context).pushReplacement(
                 PageTransition(
                   type: PageTransitionType.fade,
-                  child: HomeScreen(),
+                  child: GenderSelectionScreen(),
                 ),
               );
             },
@@ -438,7 +439,7 @@ class MyDrawerWidget extends StatelessWidget {
           ListTile(
             title: const Row(
               children: [
-                Icon(Icons.favorite, color: Colors.white),
+                Icon(Icons.favorite_outline, color: Colors.white),
                 SizedBox(width: 10),
                 Text(
                   'المفضلة',

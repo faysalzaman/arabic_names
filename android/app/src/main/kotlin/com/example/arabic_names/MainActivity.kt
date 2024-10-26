@@ -1,4 +1,4 @@
-package com.example.arabic_names
+package com.sairatec.arabic_names
 
 import io.flutter.embedding.android.FlutterActivity
 
