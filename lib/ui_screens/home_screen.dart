@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             } else if (state is NamesSuccess) {
-              namemodel = state.filteredList!;
+              namemodel = state.filteredList ?? [];
               if (filteredNames.isEmpty) filteredNames = List.from(namemodel);
               _updateAlphabet();
 
