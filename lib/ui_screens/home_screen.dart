@@ -1,5 +1,6 @@
 // ignore_for_file: must_be_immutable, library_private_types_in_public_api, unused_element
 
+import 'package:arabic_names/ui_screens/names/celebrity_names/celebrity_names_selection_screen.dart';
 import 'package:arabic_names/ui_screens/names/gender_selection_screen.dart';
 import 'package:arabic_names/utils/constants.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:arabic_names/ui_screens/names/trending_names/trending_names_sele
 import 'package:page_transition/page_transition.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'detail_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class HomeScreen extends StatefulWidget {
   int? isHomeScreenOpen = 0;
@@ -25,7 +27,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // bool isAdLoaded = false;
+  bool isAdLoaded = false;
+  late BannerAd _bannerAd;
   List<NameModel> namemodel = [];
   List<NameModel> filteredNames = [];
   String? searchQuery;
@@ -35,32 +38,46 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> alphabet = [];
   String? selectedLetter;
 
-  // late BannerAd _bannerAd;
-
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    // _initBannerAd();
+    _initBannerAd();
     itemPositionsListener.itemPositions
         .addListener(_updateSelectedLetterOnScroll);
   }
 
+  void _initBannerAd() {
+    _bannerAd = BannerAd(
+      size: AdSize.banner,
+      adUnitId:
+          'ca-app-pub-9684723099725802/2015455131', // Your banner ad unit ID
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+      request: const AdRequest(),
+    );
+    _bannerAd.load();
+  }
+
   @override
   void dispose() {
+    _bannerAd.dispose();
     itemPositionsListener.itemPositions
         .removeListener(_updateSelectedLetterOnScroll);
-    // _bannerAd.dispose();
     searchController.dispose();
     searchFocusNode.dispose();
     super.dispose();
   }
-
-  // void _initBannerAd() {
-  //   // Ad initialization code here
-  // }
 
   void _filterNames(String query) {
     setState(() {
@@ -308,13 +325,13 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-      // bottomNavigationBar: isAdLoaded
-      //     ? SizedBox(
-      //         height: _bannerAd.size.height.toDouble(),
-      //         width: _bannerAd.size.width.toDouble(),
-      //         child: AdWidget(ad: _bannerAd),
-      //       )
-      //     : const SizedBox(),
+      bottomNavigationBar: isAdLoaded
+          ? SizedBox(
+              height: _bannerAd.size.height.toDouble(),
+              width: _bannerAd.size.width.toDouble(),
+              child: AdWidget(ad: _bannerAd),
+            )
+          : const SizedBox(),
     );
   }
 }
@@ -376,6 +393,7 @@ class MyDrawerWidget extends StatelessWidget {
               fit: BoxFit.fill,
             ),
           ),
+          // Home
           ListTile(
             title: const Row(
               children: [
@@ -396,10 +414,11 @@ class MyDrawerWidget extends StatelessWidget {
               );
             },
           ),
+          // All Names
           ListTile(
             title: const Row(
               children: [
-                Icon(Icons.list, color: Colors.white),
+                Icon(Icons.list_alt_outlined, color: Colors.white),
                 SizedBox(width: 10),
                 Text(
                   'جميع الأسماء',
@@ -416,6 +435,28 @@ class MyDrawerWidget extends StatelessWidget {
               );
             },
           ),
+          // Celebrity Names
+          ListTile(
+            title: const Row(
+              children: [
+                Icon(Icons.star_outline, color: Colors.white),
+                SizedBox(width: 10),
+                Text(
+                  'أسماء المشاهير',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ],
+            ),
+            onTap: () {
+              Navigator.of(context).push(
+                PageTransition(
+                  type: PageTransitionType.fade,
+                  child: const CelebrityNamesSelectionScreen(),
+                ),
+              );
+            },
+          ),
+          // Trending Names
           ListTile(
             title: const Row(
               children: [
@@ -436,6 +477,7 @@ class MyDrawerWidget extends StatelessWidget {
               );
             },
           ),
+          // Favorites
           ListTile(
             title: const Row(
               children: [

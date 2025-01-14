@@ -8,10 +8,11 @@ import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
 import 'package:arabic_names/Bloc/NameBloc/names_bloc.dart';
 import 'package:arabic_names/DataBase/SharedPrefrences.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // MobileAds.instance.initialize();
+  MobileAds.instance.initialize();
 
   // Clear the cache before the app starts
   await DefaultCacheManager().emptyCache();

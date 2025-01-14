@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:arabic_names/Bloc/NameBloc/names_bloc.dart';
 import 'package:arabic_names/DataBase/SharedPrefrences.dart';
 import 'package:arabic_names/ui_screens/home_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class CelebrityNamesSelectionScreen extends StatefulWidget {
   const CelebrityNamesSelectionScreen({super.key});
@@ -21,8 +22,9 @@ class _CelebrityNamesSelectionScreenState
   NamesSuccess? namesState;
   bool? isViewed;
 
-  // late BannerAd _bannerAd;
-  // bool isAdLoaded = false;
+  late BannerAd _bannerAd;
+  bool isAdLoaded = false;
+  InterstitialAd? _interstitialAd;
 
   void getIsViewed() async {
     isViewed = await SharedPreference.getbool(SharedPreference.isViewed);
@@ -31,44 +33,78 @@ class _CelebrityNamesSelectionScreenState
   @override
   void initState() {
     super.initState();
-    // _initBannerAd();
+    _initBannerAd();
+    _loadInterstitialAd();
     namesBloc = BlocProvider.of<NamesBloc>(context);
     namesBloc!.add(GetNames());
     getIsViewed();
   }
 
-  // void _initBannerAd() {
-  //   _bannerAd = BannerAd(
-  //     size: AdSize.banner,
-  //     adUnitId:
-  //         'ca-app-pub-9684723099725802/9851819455', // Use your real ad unit ID
-  //     listener: BannerAdListener(
-  //       onAdLoaded: (ad) {
-  //         setState(() {
-  //           isAdLoaded = true;
-  //         });
-  //       },
-  //       onAdFailedToLoad: (ad, error) {
-  //         ad.dispose();
-  //         print(
-  //             'Failed to load a banner ad: $error'); // Optional: Add logging for errors
-  //       },
-  //     ),
-  //     request: const AdRequest(),
-  //   );
-  //   _bannerAd.load();
-  // }
+  void _initBannerAd() {
+    _bannerAd = BannerAd(
+      size: AdSize.banner,
+      adUnitId: 'ca-app-pub-9684723099725802/2015455131',
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Failed to load a banner ad: $error');
+        },
+      ),
+      request: const AdRequest(),
+    );
+    _bannerAd.load();
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-9684723099725802/9011274170',
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          print('InterstitialAd failed to load: $error');
+        },
+      ),
+    );
+  }
+
+  void _showInterstitialAd(VoidCallback onComplete) {
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _loadInterstitialAd(); // Load the next ad
+          onComplete();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _loadInterstitialAd();
+          onComplete();
+        },
+      );
+      _interstitialAd!.show();
+    } else {
+      onComplete();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // bottomNavigationBar: isAdLoaded
-      //     ? SizedBox(
-      //         height: _bannerAd.size.height.toDouble(),
-      //         width: _bannerAd.size.width.toDouble(),
-      //         child: AdWidget(ad: _bannerAd),
-      //       )
-      //     : const SizedBox(),
+      bottomNavigationBar: isAdLoaded
+          ? SizedBox(
+              height: _bannerAd.size.height.toDouble(),
+              width: _bannerAd.size.width.toDouble(),
+              child: AdWidget(ad: _bannerAd),
+            )
+          : const SizedBox(),
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
@@ -186,11 +222,21 @@ class _CelebrityNamesSelectionScreenState
       namesState = namestate;
     }
     namesBloc!.add(GetNamesOnGender(gender: gender, list: namesState!.model));
-    Navigator.push<dynamic>(
-      context,
-      MaterialPageRoute<dynamic>(
-        builder: (BuildContext context) => HomeScreen(),
-      ),
-    );
+
+    _showInterstitialAd(() {
+      Navigator.push<dynamic>(
+        context,
+        MaterialPageRoute<dynamic>(
+          builder: (BuildContext context) => HomeScreen(),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerAd.dispose();
+    _interstitialAd?.dispose();
+    super.dispose();
   }
 }

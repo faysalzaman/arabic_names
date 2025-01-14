@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class ScrollingScreen extends StatelessWidget {
   final List<String> items = [
     'Apple',
-    'Ba""a',
+    'Banana',
     'Cherry',
     'Date',
     'Elderberry',

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
 import 'package:arabic_names/ui_screens/home_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../Model/names_model.dart';
 import 'detail_screen.dart';
 
@@ -26,86 +27,75 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
 
   FavouriteBloc? favouriteBloc;
 
-  // InterstitialAd? interstitialAd;
-  // BannerAd? bannerAd;
+  late BannerAd _bannerAd;
+  bool isAdLoaded = false;
+  InterstitialAd? _interstitialAd;
 
-  bool isInterstitialAdReady = false;
-  bool isBannerAdReady = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
+    super.initState();
     favouriteBloc = BlocProvider.of<FavouriteBloc>(context);
     favouriteBloc!.add(GetFavourites());
-    super.initState();
-    // loadInterstitialAd();
-    // loadBannerAd();
+    _initBannerAd();
+    _loadInterstitialAd();
   }
 
-  // void loadInterstitialAd() {
-  //   InterstitialAd.load(
-  //     adUnitId: 'ca-app-pub-9684723099725802/6067690957',
-  //     request: const AdRequest(),
-  //     adLoadCallback: InterstitialAdLoadCallback(
-  //       onAdLoaded: (ad) {
-  //         print('تم تحميل الإعلان البيني');
-  //         interstitialAd = ad;
-  //         isInterstitialAdReady = true;
-  //       },
-  //       onAdFailedToLoad: (error) {
-  //         print('فشل تحميل الإعلان البيني: $error');
-  //         isInterstitialAdReady = false;
-  //       },
-  //     ),
-  //   );
-  // }
-
-  // void loadBannerAd() {
-  //   bannerAd = BannerAd(
-  //     adUnitId: 'ca-app-pub-9684723099725802/9851819455',
-  //     request: const AdRequest(),
-  //     size: AdSize.banner,
-  //     listener: BannerAdListener(
-  //       onAdLoaded: (_) {
-  //         setState(() {
-  //           isBannerAdReady = true;
-  //         });
-  //       },
-  //       onAdFailedToLoad: (ad, error) {
-  //         print('فشل تحميل الإعلان البانر: $error');
-  //         ad.dispose();
-  //         isBannerAdReady = false;
-  //       },
-  //     ),
-  //   );
-  //   bannerAd!.load();
-  // }
-
-  // void showInterstitialAd() {
-  //   if (isInterstitialAdReady && interstitialAd != null) {
-  //     interstitialAd!.show();
-  //     interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-  //       onAdDismissedFullScreenContent: (ad) {
-  //         ad.dispose();
-  //         loadInterstitialAd();
-  //       },
-  //       onAdFailedToShowFullScreenContent: (ad, error) {
-  //         ad.dispose();
-  //         loadInterstitialAd();
-  //       },
-  //     );
-  //   } else {
-  //     print('الإعلان البيني غير جاهز بعد');
-  //   }
-  // }
-
-  @override
-  void dispose() {
-    // interstitialAd?.dispose();
-    // bannerAd?.dispose();
-    super.dispose();
+  void _initBannerAd() {
+    _bannerAd = BannerAd(
+      size: AdSize.banner,
+      adUnitId: 'ca-app-pub-9684723099725802/2015455131',
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Failed to load a banner ad: $error');
+        },
+      ),
+      request: const AdRequest(),
+    );
+    _bannerAd.load();
   }
 
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-9684723099725802/9011274170',
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          print('InterstitialAd failed to load: $error');
+        },
+      ),
+    );
+  }
+
+  void _showInterstitialAd(VoidCallback onComplete) {
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _loadInterstitialAd();
+          onComplete();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _loadInterstitialAd();
+          onComplete();
+        },
+      );
+      _interstitialAd!.show();
+    } else {
+      onComplete();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,15 +171,16 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                             : "👩";
                         return ListTile(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetailPage(
-                                  model: namemodel[index],
+                            _showInterstitialAd(() {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DetailPage(
+                                    model: namemodel[index],
+                                  ),
                                 ),
-                              ),
-                            );
-                            // showInterstitialAd();
+                              );
+                            });
                           },
                           title: Text(
                             "${namemodel[index].urduName} $genderIcon",
@@ -213,16 +204,22 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                 },
               ),
             ),
-            // if (isBannerAdReady)
-            //   Container(
-            //     color: Colors.transparent,
-            //     width: bannerAd!.size.width.toDouble(),
-            //     height: bannerAd!.size.height.toDouble(),
-            //     child: AdWidget(ad: bannerAd!),
-            //   ),
+            if (isAdLoaded)
+              SizedBox(
+                height: _bannerAd.size.height.toDouble(),
+                width: _bannerAd.size.width.toDouble(),
+                child: AdWidget(ad: _bannerAd),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _bannerAd.dispose();
+    _interstitialAd?.dispose();
+    super.dispose();
   }
 }

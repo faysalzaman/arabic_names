@@ -4,8 +4,11 @@ import 'package:arabic_names/ui_screens/names/all_names/all_names_selection_scre
 import 'package:arabic_names/ui_screens/names/trending_names/trending_names_selection_screen.dart';
 import 'package:arabic_names/ui_screens/names/celebrity_names/celebrity_names_selection_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:arabic_names/utils/constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GenderSelectionScreen extends StatefulWidget {
   const GenderSelectionScreen({super.key});
@@ -15,80 +18,117 @@ class GenderSelectionScreen extends StatefulWidget {
 }
 
 class _GenderSelectionScreenState extends State<GenderSelectionScreen> {
-  // AppOpenAd? appOpenAd;
+  AppOpenAd? appOpenAd;
+  InterstitialAd? _interstitialAd;
 
-  // final InAppReview inAppReview = InAppReview.instance;
+  final InAppReview inAppReview = InAppReview.instance;
 
   @override
   void initState() {
     super.initState();
-    // _checkAndShowRatingDialog();
+    _checkAndShowRatingDialog();
+    _loadInterstitialAd();
   }
 
-  // void showRatingDialog() async {
-  //   print('Checking in-app review availability...');
-  //   bool isAvailable = await inAppReview.isAvailable();
-  //   print('In-app review available: $isAvailable');
+  void showRatingDialog() async {
+    print('Checking in-app review availability...');
+    bool isAvailable = await inAppReview.isAvailable();
+    print('In-app review available: $isAvailable');
 
-  //   if (isAvailable) {
-  //     print('Requesting in-app review...');
-  //     inAppReview.requestReview().then((_) {
-  //       print('In-app review requested.');
-  //     }).catchError((e) {
-  //       print('Failed to request in-app review: $e');
-  //     });
-  //   } else {
-  //     print('In-app review not available, trying to open store listing...');
-  //     inAppReview.openStoreListing(appStoreId: '8475602794689359855').then((_) {
-  //       print('Store listing opened.');
-  //     }).catchError((e) {
-  //       print('Failed to open store listing: $e');
-  //     });
-  //   }
-  // }
+    if (isAvailable) {
+      print('Requesting in-app review...');
+      inAppReview.requestReview().then((_) {
+        print('In-app review requested.');
+      }).catchError((e) {
+        print('Failed to request in-app review: $e');
+      });
+    } else {
+      print('In-app review not available, trying to open store listing...');
+      inAppReview.openStoreListing(appStoreId: '8475602794689359855').then((_) {
+        print('Store listing opened.');
+      }).catchError((e) {
+        print('Failed to open store listing: $e');
+      });
+    }
+  }
 
-  // void _checkAndShowRatingDialog() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   int appLaunchCount = (prefs.getInt('appLaunchCount') ?? 0) + 1;
+  void _checkAndShowRatingDialog() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int appLaunchCount = (prefs.getInt('appLaunchCount') ?? 0) + 1;
 
-  //   print("App Launch Count: $appLaunchCount");
+    print("App Launch Count: $appLaunchCount");
 
-  //   if (appLaunchCount >= 3) {
-  //     // Change the threshold as needed
-  //     showRatingDialog();
-  //     prefs.setInt('appLaunchCount', 0); // Reset the count
-  //   } else {
-  //     prefs.setInt('appLaunchCount', appLaunchCount);
-  //     loadAppOpenAd();
-  //   }
-  // }
+    if (appLaunchCount >= 3) {
+      // Change the threshold as needed
+      showRatingDialog();
+      prefs.setInt('appLaunchCount', 0); // Reset the count
+    } else {
+      prefs.setInt('appLaunchCount', appLaunchCount);
+      loadAppOpenAd();
+    }
+  }
 
-  // void loadAppOpenAd() {
-  //   AppOpenAd.load(
-  //     adUnitId: 'ca-app-pub-9684723099725802/4009423699',
-  //     orientation: AppOpenAd.orientationPortrait,
-  //     request: const AdRequest(),
-  //     adLoadCallback: AppOpenAdLoadCallback(
-  //       onAdLoaded: (ad) {
-  //         appOpenAd = ad;
-  //         showAppOpenAd();
-  //       },
-  //       onAdFailedToLoad: (error) {
-  //         print('AppOpenAd failed to load: $error');
-  //       },
-  //     ),
-  //   );
-  // }
+  void loadAppOpenAd() {
+    AppOpenAd.load(
+      adUnitId: 'ca-app-pub-9684723099725802/7545879768',
+      request: const AdRequest(),
+      adLoadCallback: AppOpenAdLoadCallback(
+        onAdLoaded: (ad) {
+          appOpenAd = ad;
+          showAppOpenAd();
+        },
+        onAdFailedToLoad: (error) {
+          print('AppOpenAd failed to load: $error');
+        },
+      ),
+    );
+  }
 
-  // void showAppOpenAd() {
-  //   if (appOpenAd != null) {
-  //     appOpenAd!.show();
-  //   }
-  // }
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-9684723099725802/9011274170',
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          print('InterstitialAd failed to load: $error');
+        },
+      ),
+    );
+  }
+
+  void _showInterstitialAd(VoidCallback onComplete) {
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _loadInterstitialAd(); // Load the next ad
+          onComplete();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _loadInterstitialAd();
+          onComplete();
+        },
+      );
+      _interstitialAd!.show();
+    } else {
+      onComplete();
+    }
+  }
+
+  void showAppOpenAd() {
+    if (appOpenAd != null) {
+      appOpenAd!.show();
+    }
+  }
 
   @override
   void dispose() {
-    // appOpenAd?.dispose();
+    appOpenAd?.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
   }
 
@@ -148,7 +188,9 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen> {
 
   Widget _buildButton(String text, String assetPath, VoidCallback onPressed) {
     return MaterialButton(
-      onPressed: onPressed,
+      onPressed: () {
+        _showInterstitialAd(onPressed);
+      },
       color: Constants.buttonColor,
       shape: const StadiumBorder(),
       child: Padding(

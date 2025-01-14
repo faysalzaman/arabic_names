@@ -38,7 +38,7 @@ dependencies:
   path_provider: ^2.0.10
   shared_preferences:
   flutter_bloc:
-  # google_mobile_ads: ^5.1.0
+  google_mobile_ads: ^5.1.0
   intl:
   flutter_svg:
   in_app_review: ^2.0.9

@@ -6,6 +6,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
 import '../Model/names_model.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+final TextStyle ktextStyle = TextStyle(
+  fontSize: 16,
+  color: Colors.white,
+);
+
+final TextStyle kboldTextStyle = TextStyle(
+  fontSize: 16,
+  fontWeight: FontWeight.bold,
+  color: Colors.white,
+);
 
 class DetailPage extends StatefulWidget {
   final int? isPageOpen;
@@ -23,201 +35,89 @@ class DetailPage extends StatefulWidget {
 
 class _DetailPageState extends State<DetailPage> {
   bool isFav = false;
-  // bool isInterstitialAdReady = false;
-  // bool isBannerAdReady = false;
-
-  // InterstitialAd? interstitialAd;
-  // BannerAd? bannerAd;
-
-  final horizantalSpacing = const SizedBox(height: 12);
-
-  final kboldTextStyle = const TextStyle(
-    fontSize: 15,
-    color: Colors.white,
-  );
-
-  final ktextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-  );
-
+  late BannerAd _bannerAd;
+  bool isAdLoaded = false;
+  InterstitialAd? _interstitialAd;
   FavouriteBloc? favouriteBloc;
 
   @override
   void initState() {
     favouriteBloc = BlocProvider.of<FavouriteBloc>(context);
     super.initState();
-
-    // loadInterstitialAd();
-    // loadBannerAd();
-
+    _initBannerAd();
+    _loadInterstitialAd();
     isFav = widget.model!.isFavourite == true;
-    print(widget.model!.toMap());
   }
 
-  // void loadInterstitialAd() {
-  //   InterstitialAd.load(
-  //     adUnitId: 'ca-app-pub-9684723099725802/6067690957',
-  //     request: const AdRequest(),
-  //     adLoadCallback: InterstitialAdLoadCallback(
-  //       onAdLoaded: (ad) {
-  //         print('InterstitialAd loaded');
-  //         interstitialAd = ad;
-  //         isInterstitialAdReady = true;
-  //       },
-  //       onAdFailedToLoad: (error) {
-  //         print('InterstitialAd failed to load: $error');
-  //         isInterstitialAdReady = false;
-  //       },
-  //     ),
-  //   );
-  // }
-
-  // void loadBannerAd() {
-  //   bannerAd = BannerAd(
-  //     adUnitId: 'ca-app-pub-9684723099725802/9851819455',
-  //     request: const AdRequest(),
-  //     size: AdSize.banner,
-  //     listener: BannerAdListener(
-  //       onAdLoaded: (_) {
-  //         setState(() {
-  //           isBannerAdReady = true;
-  //         });
-  //       },
-  //       onAdFailedToLoad: (ad, error) {
-  //         print('BannerAd failed to load: $error');
-  //         ad.dispose();
-  //         isBannerAdReady = false;
-  //       },
-  //     ),
-  //   );
-  //   bannerAd!.load();
-  // }
-
-  // void showInterstitialAd() {
-  //   if (isInterstitialAdReady && interstitialAd != null) {
-  //     interstitialAd!.show();
-  //     interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-  //       onAdDismissedFullScreenContent: (ad) {
-  //         ad.dispose();
-  //         loadInterstitialAd();
-  //       },
-  //       onAdFailedToShowFullScreenContent: (ad, error) {
-  //         ad.dispose();
-  //         loadInterstitialAd();
-  //       },
-  //     );
-  //   } else {
-  //     print('Interstitial ad is not ready yet');
-  //   }
-  // }
-
-  void toggleFavorite() {
-    setState(() {
-      isFav = !isFav;
-    });
-
-    if (isFav) {
-      widget.model!.isFavourite = "1";
-    } else {
-      widget.model!.isFavourite = "0";
-    }
-
-    favouriteBloc!.add(AddtoFavourite(model: widget.model!));
-
-    // showInterstitialAd();
+  void _initBannerAd() {
+    _bannerAd = BannerAd(
+      size: AdSize.banner,
+      adUnitId: 'ca-app-pub-9684723099725802/2015455131',
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Failed to load a banner ad: $error');
+        },
+      ),
+      request: const AdRequest(),
+    );
+    _bannerAd.load();
   }
 
-  @override
-  void dispose() {
-    // interstitialAd?.dispose();
-    // bannerAd?.dispose();
-    super.dispose();
-  }
-
-  //  ... (keep all existing properties and methods)
-
-  Widget _buildInfoRow(String label, String? value, {bool isUrdu = false}) {
-    if (value == null || value.isEmpty || value == "null") {
-      return const SizedBox
-          .shrink(); // Return an empty widget if the value is null or empty
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Wrap(
-        children: [
-          Text(
-            isUrdu ? '$value : ' : '$label : ',
-            style: isUrdu ? ktextStyle : kboldTextStyle,
-          ),
-          Text(
-            isUrdu ? label : value,
-            style: isUrdu ? kboldTextStyle : ktextStyle,
-          ),
-        ],
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-9684723099725802/9011274170',
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          print('InterstitialAd failed to load: $error');
+        },
       ),
     );
   }
 
-  List<Widget> _buildEnglishContent() {
-    return [
-      _buildInfoRow('Name', widget.model!.englishName),
-      _buildInfoRow('Meaning', widget.model!.englishMeaning),
-      _buildInfoRow(
-          'Gender',
-          widget.model?.gender.toString() == "Male" ||
-                  widget.model?.gender.toString() == "Boy" ||
-                  widget.model?.gender.toString() == "Larka"
-              ? "Male"
-              : "Male"),
-      _buildInfoRow('Religion', widget.model!.englishReligion),
-      _buildInfoRow('Language', widget.model!.englishLanguage),
-      _buildInfoRow('Lucky Number', widget.model?.urduLuckyNumber),
-      _buildInfoRow('Lucky Color', widget.model!.englishLuckyColor),
-      _buildInfoRow('Lucky Day', widget.model!.englishLuckyDay),
-      _buildInfoRow('Lucky Metal', widget.model!.englishLuckyMetals),
-      _buildInfoRow('Lucky Stone', widget.model!.englishLuckyStones),
-      _buildInfoRow('Famous Person', widget.model!.englishFamousPerson),
-      _buildInfoRow('Description', widget.model!.englishDescription),
-      _buildInfoRow('Known For', widget.model!.englishKnownFor),
-      _buildInfoRow('Occupation/Designation', widget.model!.englishOccopation),
-    ]
-        .where((widget) => widget is! SizedBox)
-        .toList(); // Filter out the empty rows
+  void _showInterstitialAd(VoidCallback onComplete) {
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _loadInterstitialAd();
+          onComplete();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _loadInterstitialAd();
+          onComplete();
+        },
+      );
+      _interstitialAd!.show();
+    } else {
+      onComplete();
+    }
   }
 
-  List<Widget> _buildUrduContent() {
-    return [
-      _buildInfoRow('الاسم', widget.model!.urduName, isUrdu: true),
-      _buildInfoRow('المعنى', widget.model?.urduMeaning, isUrdu: true),
-      _buildInfoRow(
-          'الجنس',
-          widget.model?.gender.toString() == "Male" ||
-                  widget.model?.gender.toString() == "Boy" ||
-                  widget.model?.gender.toString() == "Larka"
-              ? "ذكر"
-              : "أنثى",
-          isUrdu: true),
-      _buildInfoRow('الديانة', widget.model!.urduReligion, isUrdu: true),
-      _buildInfoRow('اللغة', widget.model!.urduLanguage, isUrdu: true),
-      _buildInfoRow('اللون المفضل', widget.model!.urduLuckyColor, isUrdu: true),
-      _buildInfoRow('اليوم المفضل', widget.model!.urduLuckyDay, isUrdu: true),
-      _buildInfoRow('المعدن المفضل', widget.model!.urduLuckyMetals,
-          isUrdu: true),
-      _buildInfoRow('الرقم المفضل', widget.model!.urduLuckyNumber,
-          isUrdu: true),
-      _buildInfoRow('الحجر المفضل', widget.model!.urduLuckyStones,
-          isUrdu: true),
-      _buildInfoRow('الشخصية المشهورة', widget.model!.urduFamousPerson,
-          isUrdu: true),
-      _buildInfoRow('الوصف', widget.model!.urduDescription, isUrdu: true),
-      _buildInfoRow('مشهور بـ', widget.model!.urduKnownFor, isUrdu: true),
-      _buildInfoRow('الوظيفة / المهنة', widget.model!.urduOccopation,
-          isUrdu: true),
-    ]
-        .where((widget) => widget is! SizedBox)
-        .toList(); // Filter out the empty rows
+  void toggleFavorite() {
+    _showInterstitialAd(() {
+      setState(() {
+        isFav = !isFav;
+      });
+
+      if (isFav) {
+        widget.model!.isFavourite = "1";
+      } else {
+        widget.model!.isFavourite = "0";
+      }
+
+      favouriteBloc!.add(AddtoFavourite(model: widget.model!));
+    });
   }
 
   @override
@@ -301,17 +201,110 @@ class _DetailPageState extends State<DetailPage> {
                   ],
                 ),
               ),
-              // if (isBannerAdReady)
-              //   Container(
-              //     color: Colors.transparent,
-              //     width: bannerAd!.size.width.toDouble(),
-              //     height: bannerAd!.size.height.toDouble(),
-              //     child: AdWidget(ad: bannerAd!),
-              //   ),
+              if (isAdLoaded)
+                SizedBox(
+                  height: _bannerAd.size.height.toDouble(),
+                  width: _bannerAd.size.width.toDouble(),
+                  child: AdWidget(ad: _bannerAd),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _bannerAd.dispose();
+    _interstitialAd?.dispose();
+    super.dispose();
+  }
+
+  //  ... (keep all existing properties and methods)
+
+  Widget _buildInfoRow(String label, String? value, {bool isUrdu = false}) {
+    if (value == null || value.isEmpty || value == "null") {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Wrap(
+        children: [
+          Text(
+            isUrdu ? '$value : ' : '$label : ',
+            style: isUrdu
+                ? ktextStyle.copyWith(color: Colors.white)
+                : kboldTextStyle.copyWith(color: Colors.white),
+          ),
+          Text(
+            isUrdu ? label : value,
+            style: isUrdu
+                ? kboldTextStyle.copyWith(color: Colors.white)
+                : ktextStyle.copyWith(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildEnglishContent() {
+    return [
+      _buildInfoRow('Name', widget.model!.englishName),
+      _buildInfoRow('Meaning', widget.model!.englishMeaning),
+      _buildInfoRow(
+          'Gender',
+          widget.model?.gender.toString() == "Male" ||
+                  widget.model?.gender.toString() == "Boy" ||
+                  widget.model?.gender.toString() == "Larka"
+              ? "Male"
+              : "Male"),
+      _buildInfoRow('Religion', widget.model!.englishReligion),
+      _buildInfoRow('Language', widget.model!.englishLanguage),
+      _buildInfoRow('Lucky Number', widget.model?.urduLuckyNumber),
+      _buildInfoRow('Lucky Color', widget.model!.englishLuckyColor),
+      _buildInfoRow('Lucky Day', widget.model!.englishLuckyDay),
+      _buildInfoRow('Lucky Metal', widget.model!.englishLuckyMetals),
+      _buildInfoRow('Lucky Stone', widget.model!.englishLuckyStones),
+      _buildInfoRow('Famous Person', widget.model!.englishFamousPerson),
+      _buildInfoRow('Description', widget.model!.englishDescription),
+      _buildInfoRow('Known For', widget.model!.englishKnownFor),
+      _buildInfoRow('Occupation/Designation', widget.model!.englishOccopation),
+    ]
+        .where((widget) => widget is! SizedBox)
+        .toList(); // Filter out the empty rows
+  }
+
+  List<Widget> _buildUrduContent() {
+    return [
+      _buildInfoRow('الاسم', widget.model!.urduName, isUrdu: true),
+      _buildInfoRow('المعنى', widget.model?.urduMeaning, isUrdu: true),
+      _buildInfoRow(
+          'الجنس',
+          widget.model?.gender.toString() == "Male" ||
+                  widget.model?.gender.toString() == "Boy" ||
+                  widget.model?.gender.toString() == "Larka"
+              ? "ذكر"
+              : "أنثى",
+          isUrdu: true),
+      _buildInfoRow('الديانة', widget.model!.urduReligion, isUrdu: true),
+      _buildInfoRow('اللغة', widget.model!.urduLanguage, isUrdu: true),
+      _buildInfoRow('اللون المفضل', widget.model!.urduLuckyColor, isUrdu: true),
+      _buildInfoRow('اليوم المفضل', widget.model!.urduLuckyDay, isUrdu: true),
+      _buildInfoRow('المعدن المفضل', widget.model!.urduLuckyMetals,
+          isUrdu: true),
+      _buildInfoRow('الرقم المفضل', widget.model!.urduLuckyNumber,
+          isUrdu: true),
+      _buildInfoRow('الحجر المفضل', widget.model!.urduLuckyStones,
+          isUrdu: true),
+      _buildInfoRow('الشخصية المشهورة', widget.model!.urduFamousPerson,
+          isUrdu: true),
+      _buildInfoRow('الوصف', widget.model!.urduDescription, isUrdu: true),
+      _buildInfoRow('مشهور بـ', widget.model!.urduKnownFor, isUrdu: true),
+      _buildInfoRow('الوظيفة / المهنة', widget.model!.urduOccopation,
+          isUrdu: true),
+    ]
+        .where((widget) => widget is! SizedBox)
+        .toList(); // Filter out the empty rows
   }
 }
