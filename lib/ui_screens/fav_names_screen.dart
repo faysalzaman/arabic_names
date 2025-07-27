@@ -33,6 +33,8 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  int _clickCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -78,7 +80,9 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
   }
 
   void _showInterstitialAd(VoidCallback onComplete) {
-    if (_interstitialAd != null) {
+    _clickCount++;
+
+    if (_clickCount % 2 == 0 && _interstitialAd != null) {
       _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdDismissedFullScreenContent: (ad) {
           ad.dispose();
@@ -150,7 +154,7 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                     );
                   }
                   if (state is FavouriteSuccess) {
-                    namemodel = state.model;
+                    namemodel = state.model.toSet().toList();
                     if (namemodel.isEmpty || namemodel == null) {
                       return const Center(
                         child: Text(

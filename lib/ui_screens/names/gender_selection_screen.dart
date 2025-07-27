@@ -189,7 +189,8 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen> {
   Widget _buildButton(String text, String assetPath, VoidCallback onPressed) {
     return MaterialButton(
       onPressed: () {
-        _showInterstitialAd(onPressed);
+        // _showInterstitialAd(onPressed);
+        onPressed();
       },
       color: Constants.buttonColor,
       shape: const StadiumBorder(),

@@ -39,6 +39,7 @@ class _DetailPageState extends State<DetailPage> {
   bool isAdLoaded = false;
   InterstitialAd? _interstitialAd;
   FavouriteBloc? favouriteBloc;
+  int _favoriteClickCount = 0;
 
   @override
   void initState() {
@@ -46,7 +47,8 @@ class _DetailPageState extends State<DetailPage> {
     super.initState();
     _initBannerAd();
     _loadInterstitialAd();
-    isFav = widget.model!.isFavourite == true;
+    isFav =
+        widget.model!.isFavourite == "1" || widget.model!.isFavourite == true;
   }
 
   void _initBannerAd() {
@@ -70,54 +72,90 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   void _loadInterstitialAd() {
+    if (_interstitialAd != null)
+      return; // Don't load if an ad is already loading/loaded
+
     InterstitialAd.load(
       adUnitId: 'ca-app-pub-9684723099725802/9011274170',
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          _interstitialAd = ad;
+          setState(() {
+            _interstitialAd = ad;
+          });
         },
         onAdFailedToLoad: (error) {
           print('InterstitialAd failed to load: $error');
+          setState(() {
+            _interstitialAd = null;
+          });
         },
       ),
     );
   }
 
   void _showInterstitialAd(VoidCallback onComplete) {
-    if (_interstitialAd != null) {
-      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (ad) {
-          ad.dispose();
-          _loadInterstitialAd();
-          onComplete();
-        },
-        onAdFailedToShowFullScreenContent: (ad, error) {
-          ad.dispose();
-          _loadInterstitialAd();
-          onComplete();
-        },
-      );
-      _interstitialAd!.show();
-    } else {
+    if (_interstitialAd == null) {
+      // If ad is not loaded, just complete the action
       onComplete();
+      return;
     }
+
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        setState(() {
+          _interstitialAd = null;
+        });
+        _loadInterstitialAd(); // Load the next ad
+        onComplete();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        print('Failed to show interstitial ad: $error');
+        ad.dispose();
+        setState(() {
+          _interstitialAd = null;
+        });
+        _loadInterstitialAd(); // Load the next ad
+        onComplete();
+      },
+    );
+
+    // Show the ad
+    _interstitialAd!.show().catchError((error) {
+      print('Error showing interstitial ad: $error');
+      onComplete();
+    });
   }
 
   void toggleFavorite() {
-    _showInterstitialAd(() {
-      setState(() {
-        isFav = !isFav;
-      });
+    _favoriteClickCount++;
 
-      if (isFav) {
-        widget.model!.isFavourite = "1";
+    if (_favoriteClickCount % 2 == 1) {
+      if (_interstitialAd == null) {
+        _loadInterstitialAd();
+        _executeFavoriteAction();
       } else {
-        widget.model!.isFavourite = "0";
+        _showInterstitialAd(() {
+          _executeFavoriteAction();
+        });
       }
+    } else {
+      _executeFavoriteAction();
+    }
+  }
 
-      favouriteBloc!.add(AddtoFavourite(model: widget.model!));
+  void _executeFavoriteAction() {
+    setState(() {
+      isFav = !isFav;
     });
+
+    widget.model!.isFavourite = isFav ? "1" : "0";
+    favouriteBloc!.add(AddtoFavourite(model: widget.model!));
+
+    if (_favoriteClickCount % 2 == 1) {
+      _loadInterstitialAd();
+    }
   }
 
   @override
@@ -218,6 +256,9 @@ class _DetailPageState extends State<DetailPage> {
   void dispose() {
     _bannerAd.dispose();
     _interstitialAd?.dispose();
+    setState(() {
+      _interstitialAd = null;
+    });
     super.dispose();
   }
 

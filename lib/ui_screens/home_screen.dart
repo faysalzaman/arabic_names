@@ -289,11 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemCount: filteredNames.length,
                       itemBuilder: (context, index) {
                         final name = filteredNames[index];
-                        final genderIcon = name.gender == "Male" ||
-                                name.gender == "Male" ||
-                                name.gender == "Male"
-                            ? "👨"
-                            : "👩";
+                        final genderIcon = name.gender == "Male" ? "👨" : "👩";
                         return ListTile(
                           title: Text(
                             "${name.urduName} $genderIcon",

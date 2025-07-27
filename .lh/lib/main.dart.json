@@ -1,0 +1,18 @@
+{
+    "sourceFile": "lib/main.dart",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1753602612541,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1753602612541,
+            "name": "Commit-0",
+            "content": "//  ignore_for_file: library_private_types_in_public_api\n\nimport 'package:arabic_names/ui_screens/splash_screen.dart';\nimport 'package:arabic_names/utils/constants.dart';\nimport 'package:flutter/material.dart';\nimport 'package:flutter_bloc/flutter_bloc.dart';\nimport 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';\nimport 'package:arabic_names/Bloc/NameBloc/names_bloc.dart';\nimport 'package:arabic_names/DataBase/SharedPrefrences.dart';\nimport 'package:flutter_cache_manager/flutter_cache_manager.dart';\nimport 'package:google_mobile_ads/google_mobile_ads.dart';\n\n// it will run in fvm version 3.32.0\n\nvoid main() async {\n  WidgetsFlutterBinding.ensureInitialized();\n  MobileAds.instance.initialize();\n\n  // Clear the cache before the app starts\n  await DefaultCacheManager().emptyCache();\n\n  runApp(\n    MultiBlocProvider(\n      providers: [\n        BlocProvider<NamesBloc>(create: (context) => NamesBloc()),\n        BlocProvider<FavouriteBloc>(create: (context) => FavouriteBloc()),\n      ],\n      child: const MyApp(),\n    ),\n  );\n}\n\nclass MyApp extends StatefulWidget {\n  //  ignore: use_key_in_widget_constructors\n  const MyApp({super.key});\n\n  @override\n  State<MyApp> createState() => _MyAppState();\n}\n\nclass _MyAppState extends State<MyApp> {\n  @override\n  void initState() {\n    super.initState();\n  }\n\n  @override\n  void dispose() {\n    super.dispose();\n    SharedPreference.savebool(SharedPreference.isViewedPopUP, false);\n  }\n\n  //  This widget is the root of your application.\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: 'Arabic Names App',\n      theme: ThemeData(\n        // primarySwatch: Constants.primaryColor,\n        visualDensity: VisualDensity.adaptivePlatformDensity,\n        colorScheme: ColorScheme.fromSwatch().copyWith(\n          primary: Constants.primaryColor,\n        ),\n        progressIndicatorTheme: const ProgressIndicatorThemeData(\n          color: Constants.primaryColor,\n        ),\n      ),\n      debugShowCheckedModeBanner: false,\n      home: SplashScreen(),\n    );\n  }\n}\n"
+        }
+    ]
+}

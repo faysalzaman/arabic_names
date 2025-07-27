@@ -10,6 +10,8 @@ import 'package:arabic_names/DataBase/SharedPrefrences.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+// it will run in fvm version 3.32.0
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
