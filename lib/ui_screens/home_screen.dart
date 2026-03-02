@@ -1,5 +1,6 @@
 // ignore_for_file: must_be_immutable, library_private_types_in_public_api, unused_element
 
+import 'dart:async';
 import 'package:arabic_names/ui_screens/names/celebrity_names/celebrity_names_selection_screen.dart';
 import 'package:arabic_names/ui_screens/names/gender_selection_screen.dart';
 import 'package:arabic_names/utils/constants.dart';
@@ -37,6 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ItemPositionsListener.create();
   List<String> alphabet = [];
   String? selectedLetter;
+  Timer? _scrollDebounceTimer;
+  bool _isScrolling = false;
 
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
@@ -72,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _bannerAd.dispose();
+    _scrollDebounceTimer?.cancel();
     itemPositionsListener.itemPositions
         .removeListener(_updateSelectedLetterOnScroll);
     searchController.dispose();
@@ -128,34 +132,96 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _scrollToLetter(String letter) {
-    final index =
-        filteredNames.indexWhere((name) => name.urduName!.startsWith(letter));
-    if (index != -1) {
-      itemScrollController.scrollTo(
-        index: index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOutCubic,
-      );
+    if (_isScrolling) return; // Prevent multiple rapid scrolls
+
+    // Find the first name that starts with the selected letter
+    final index = filteredNames.indexWhere((name) =>
+        name.urduName != null &&
+        name.urduName!.isNotEmpty &&
+        _getFirstArabicLetter(name.urduName!) == letter);
+
+    if (index != -1 && index < filteredNames.length) {
+      _isScrolling = true;
       setState(() {
         selectedLetter = letter;
+      });
+
+      itemScrollController
+          .scrollTo(
+        index: index,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutQuart,
+      )
+          .then((_) {
+        // Reset scrolling flag after animation completes
+        _isScrolling = false;
+      }).catchError((error) {
+        _isScrolling = false;
       });
     }
   }
 
   void _updateSelectedLetterOnScroll() {
-    if (itemPositionsListener.itemPositions.value.isNotEmpty) {
-      int firstVisibleItemIndex = itemPositionsListener.itemPositions.value
-          .where((ItemPosition position) => position.itemTrailingEdge > 0)
-          .reduce((ItemPosition min, ItemPosition position) =>
-              position.itemLeadingEdge < min.itemLeadingEdge ? position : min)
-          .index;
+    // Debounce scroll events to improve performance
+    _scrollDebounceTimer?.cancel();
+    _scrollDebounceTimer = Timer(const Duration(milliseconds: 150), () {
+      if (!mounted) return;
 
-      String currentLetter = filteredNames[firstVisibleItemIndex].urduName![0];
-      if (currentLetter != selectedLetter) {
-        setState(() {
-          selectedLetter = currentLetter;
-        });
+      final positions = itemPositionsListener.itemPositions.value;
+      if (positions.isEmpty || filteredNames.isEmpty) return;
+
+      try {
+        // Get the first visible item that's more than 50% visible
+        final visiblePositions = positions.where((position) =>
+            position.itemLeadingEdge < 0.5 && position.itemTrailingEdge > 0.0);
+
+        if (visiblePositions.isEmpty) return;
+
+        final firstVisibleIndex = visiblePositions
+            .reduce((a, b) => a.itemLeadingEdge < b.itemLeadingEdge ? a : b)
+            .index;
+
+        if (firstVisibleIndex >= 0 &&
+            firstVisibleIndex < filteredNames.length) {
+          final currentName = filteredNames[firstVisibleIndex];
+          if (currentName.urduName != null &&
+              currentName.urduName!.isNotEmpty) {
+            final currentLetter = _getFirstArabicLetter(currentName.urduName!);
+
+            if (currentLetter != selectedLetter && !_isScrolling) {
+              setState(() {
+                selectedLetter = currentLetter;
+              });
+            }
+          }
+        }
+      } catch (e) {
+        // Handle any errors gracefully
+        debugPrint('Error in scroll listener: $e');
       }
+    });
+  }
+
+  // Helper method to extract the first Arabic letter correctly
+  String _getFirstArabicLetter(String text) {
+    if (text.isEmpty) return '';
+
+    // Remove diacritics and get the first character
+    String firstChar = text.trim()[0];
+
+    // Map similar Arabic letters to their base form
+    switch (firstChar) {
+      case '\u0623':
+      case '\u0625':
+      case '\u0622':
+      case '\u0627':
+        return '\u0627';
+      case '\u0629':
+        return '\u062a';
+      case '\u0649':
+        return '\u064a';
+      default:
+        return firstChar;
     }
   }
 
@@ -245,11 +311,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   // Alphabet list
                   Container(
-                    width: 40,
+                    width: 45,
                     height: MediaQuery.of(context).size.height * 1,
                     alignment: Alignment.center,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
                     child: ListView(
                       shrinkWrap: true,
+                      physics: const BouncingScrollPhysics(),
                       children: [
                         for (var letter in alphabet)
                           GestureDetector(
@@ -257,24 +325,31 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: Container(
-                                height: 20,
+                                height: 24,
+                                margin: const EdgeInsets.symmetric(vertical: 1),
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: selectedLetter == letter
-                                      ? Constants.primaryColor.withOpacity(0.3)
+                                      ? Constants.primaryColor.withOpacity(0.4)
                                       : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: selectedLetter == letter
+                                      ? Border.all(
+                                          color: Constants.primaryColor,
+                                          width: 1,
+                                        )
+                                      : null,
                                 ),
                                 child: Text(
                                   letter,
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     color: selectedLetter == letter
                                         ? Colors.white
-                                        : Colors.white.withOpacity(0.7),
+                                        : Colors.white.withOpacity(0.8),
                                     fontWeight: selectedLetter == letter
                                         ? FontWeight.bold
-                                        : FontWeight.normal,
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -286,11 +361,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Main list of names
                   Expanded(
                     child: ScrollablePositionedList.builder(
+                      padding: EdgeInsets.only(
+                        bottom: isAdLoaded
+                            ? _bannerAd.size.height.toDouble() + 10
+                            : 10,
+                      ),
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
                       itemCount: filteredNames.length,
                       itemBuilder: (context, index) {
                         final name = filteredNames[index];
                         final genderIcon = name.gender == "Male" ? "👨" : "👩";
                         return ListTile(
+                          dense: false,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 4.0,
+                          ),
                           title: Text(
                             "${name.urduName} $genderIcon",
                             textAlign: TextAlign.right,
@@ -322,12 +410,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: isAdLoaded
-          ? SizedBox(
-              height: _bannerAd.size.height.toDouble(),
-              width: _bannerAd.size.width.toDouble(),
-              child: AdWidget(ad: _bannerAd),
+          ? SafeArea(
+              child: Container(
+                height: _bannerAd.size.height.toDouble(),
+                width: _bannerAd.size.width.toDouble(),
+                child: AdWidget(ad: _bannerAd),
+              ),
             )
-          : const SizedBox(),
+          : null,
     );
   }
 }

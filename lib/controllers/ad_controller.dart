@@ -30,6 +30,18 @@ class AdController {
           ad.dispose();
           onAdFailedToLoad(error);
         },
+        onAdOpened: (ad) {
+          // Ad opened callback
+        },
+        onAdClosed: (ad) {
+          // Ad closed callback
+        },
+        onAdImpression: (ad) {
+          // Ad impression callback
+        },
+        onAdWillDismissScreen: (ad) {
+          // Ad will dismiss screen callback
+        },
       ),
       request: const AdRequest(),
     );
@@ -38,9 +50,30 @@ class AdController {
 
   BannerAd? get bannerAd => _bannerAd;
 
+  /// Get the height of the banner ad for proper padding calculations
+  double get bannerHeight => _bannerAd?.size.height.toDouble() ?? 0.0;
+
+  /// Get the width of the banner ad
+  double get bannerWidth => _bannerAd?.size.width.toDouble() ?? 0.0;
+
+  /// Check if banner ad is ready to be displayed safely
+  bool get canDisplayAd => _bannerAd != null && isAdLoaded;
+
   void dispose() {
     _bannerAd?.dispose();
     _bannerAd = null;
     isAdLoaded = false;
+  }
+
+  /// Reload the banner ad if it fails to load
+  void reloadBannerAd({
+    required Function() onAdLoaded,
+    required Function(LoadAdError) onAdFailedToLoad,
+  }) {
+    dispose();
+    initBannerAd(
+      onAdLoaded: onAdLoaded,
+      onAdFailedToLoad: onAdFailedToLoad,
+    );
   }
 }

@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print, library_private_types_in_public_api, file_names
+// ignore_for_file: avoid_print, library_private_types_in_public_api, file_names, unused_element
 
 import 'package:arabic_names/ui_screens/names/all_names/all_names_selection_screen.dart';
 import 'package:arabic_names/ui_screens/names/trending_names/trending_names_selection_screen.dart';

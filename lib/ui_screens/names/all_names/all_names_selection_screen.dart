@@ -98,12 +98,14 @@ class _AllNamesSelectionScreenState extends State<AllNamesSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       bottomNavigationBar: isAdLoaded
-          ? SizedBox(
-              height: _bannerAd.size.height.toDouble(),
-              width: _bannerAd.size.width.toDouble(),
-              child: AdWidget(ad: _bannerAd),
+          ? SafeArea(
+              child: Container(
+                height: _bannerAd.size.height.toDouble(),
+                width: _bannerAd.size.width.toDouble(),
+                child: AdWidget(ad: _bannerAd),
+              ),
             )
-          : const SizedBox(),
+          : null,
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(

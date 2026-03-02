@@ -212,41 +212,48 @@ class _DetailPageState extends State<DetailPage> {
             ],
             centerTitle: true,
           ),
-          body: Column(
+          body: TabBarView(
             children: [
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    SingleChildScrollView(
-                      child: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: _buildUrduContent(),
-                        ),
-                      ),
-                    ),
-                    SingleChildScrollView(
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _buildEnglishContent(),
-                        ),
-                      ),
-                    ),
-                  ],
+              SingleChildScrollView(
+                child: Container(
+                  alignment: Alignment.centerRight,
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    isAdLoaded ? _bannerAd.size.height.toDouble() + 20 : 20,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: _buildUrduContent(),
+                  ),
                 ),
               ),
-              if (isAdLoaded)
-                SizedBox(
-                  height: _bannerAd.size.height.toDouble(),
-                  width: _bannerAd.size.width.toDouble(),
-                  child: AdWidget(ad: _bannerAd),
+              SingleChildScrollView(
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    isAdLoaded ? _bannerAd.size.height.toDouble() + 20 : 20,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _buildEnglishContent(),
+                  ),
                 ),
+              ),
             ],
           ),
+          bottomNavigationBar: isAdLoaded
+              ? SafeArea(
+                  child: Container(
+                    height: _bannerAd.size.height.toDouble(),
+                    width: _bannerAd.size.width.toDouble(),
+                    child: AdWidget(ad: _bannerAd),
+                  ),
+                )
+              : null,
         ),
       ),
     );

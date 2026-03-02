@@ -139,83 +139,84 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
           ),
           centerTitle: true,
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: BlocBuilder<FavouriteBloc, FavouriteState>(
-                builder: (context, state) {
-                  if (state is FavouriteLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        strokeWidth: 10,
-                        strokeCap: StrokeCap.round,
-                      ),
-                    );
-                  }
-                  if (state is FavouriteSuccess) {
-                    namemodel = state.model.toSet().toList();
-                    if (namemodel.isEmpty || namemodel == null) {
-                      return const Center(
-                        child: Text(
-                          'لا توجد أسماء مفضلة بعد',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      );
-                    }
-                    return ListView.builder(
-                      itemCount: namemodel.length,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemBuilder: (BuildContext context, int index) {
-                        String genderIcon = namemodel[index].gender == "ذكر" ||
-                                namemodel[index].gender == "صبي" ||
-                                namemodel[index].gender == "ولد"
-                            ? "👨"
-                            : "👩";
-                        return ListTile(
-                          onTap: () {
-                            _showInterstitialAd(() {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DetailPage(
-                                    model: namemodel[index],
-                                  ),
-                                ),
-                              );
-                            });
-                          },
-                          title: Text(
-                            "${namemodel[index].urduName} $genderIcon",
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
+        body: BlocBuilder<FavouriteBloc, FavouriteState>(
+          builder: (context, state) {
+            if (state is FavouriteLoading) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 10,
+                  strokeCap: StrokeCap.round,
+                ),
+              );
+            }
+            if (state is FavouriteSuccess) {
+              namemodel = state.model.toSet().toList();
+              if (namemodel.isEmpty || namemodel == null) {
+                return const Center(
+                  child: Text(
+                    'لا توجد أسماء مفضلة بعد',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                );
+              }
+              return ListView.builder(
+                padding: EdgeInsets.only(
+                  bottom:
+                      isAdLoaded ? _bannerAd.size.height.toDouble() + 10 : 10,
+                ),
+                itemCount: namemodel.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemBuilder: (BuildContext context, int index) {
+                  String genderIcon = namemodel[index].gender == "ذكر" ||
+                          namemodel[index].gender == "صبي" ||
+                          namemodel[index].gender == "ولد"
+                      ? "👨"
+                      : "👩";
+                  return ListTile(
+                    onTap: () {
+                      _showInterstitialAd(() {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailPage(
+                              model: namemodel[index],
                             ),
                           ),
                         );
-                      },
-                    );
-                  }
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      strokeWidth: 10,
-                      strokeCap: StrokeCap.round,
+                      });
+                    },
+                    title: Text(
+                      "${namemodel[index].urduName} $genderIcon",
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                      ),
                     ),
                   );
                 },
+              );
+            }
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 10,
+                strokeCap: StrokeCap.round,
               ),
-            ),
-            if (isAdLoaded)
-              SizedBox(
-                height: _bannerAd.size.height.toDouble(),
-                width: _bannerAd.size.width.toDouble(),
-                child: AdWidget(ad: _bannerAd),
-              ),
-          ],
+            );
+          },
         ),
+        bottomNavigationBar: isAdLoaded
+            ? SafeArea(
+                child: Container(
+                  height: _bannerAd.size.height.toDouble(),
+                  width: _bannerAd.size.width.toDouble(),
+                  child: AdWidget(ad: _bannerAd),
+                ),
+              )
+            : null,
       ),
     );
   }
