@@ -9,7 +9,8 @@ Done in code: A1–A10 and B1–B6, C1–C3, and the unused assets/dependencies/
 * Favourites are stored by a stable name key, can be removed, and old favourites are migrated.
 * Search is accent/alef-insensitive, covers Arabic + English names and meanings, and a "no result" search stays empty.
 * One `CategoryScreen` replaces three copies; ads go through `lib/ads/` (adaptive banner, one interstitial manager, test ids in debug).
-* Still open: the signing keystore in git (D), the design work (E), and new data (C5).
+* Redesign (E) written too: dark green/orange Material 3 theme, right-to-left Arabic layout, new menu cards, one names screen with a boys/girls switch, rich tiles (Arabic + English name, meaning, heart), redesigned detail and favourites screens, drawer removed.
+* Still open: the signing keystore in git (D), a bundled Arabic font, and new data (C5).
 
 ---
 

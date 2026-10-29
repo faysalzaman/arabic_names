@@ -1,6 +1,5 @@
 import 'package:arabic_names/DataBase/names_repository.dart';
-import 'package:arabic_names/ui_screens/names/gender_selection_screen.dart';
-import 'package:arabic_names/utils/constants.dart';
+import 'package:arabic_names/ui_screens/menu_screen.dart';
 import 'package:arabic_names/widgets/app_background.dart';
 import 'package:flutter/material.dart';
 
@@ -41,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const GenderSelectionScreen()),
+      MaterialPageRoute(builder: (_) => const MenuScreen()),
     );
   }
 
@@ -53,7 +52,10 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset('assets/اسماء اولاد وبنات.png', width: 160, height: 160),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: Image.asset('assets/اسماء اولاد وبنات.png', width: 140, height: 140),
+              ),
               const SizedBox(height: 32),
               if (_failed) ...[
                 const Text(
@@ -63,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 const SizedBox(height: 12),
                 FilledButton(onPressed: _boot, child: const Text('إعادة المحاولة')),
               ] else
-                const CircularProgressIndicator(color: Constants.primaryColor),
+                const CircularProgressIndicator(),
             ],
           ),
         ),
