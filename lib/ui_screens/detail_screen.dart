@@ -1,195 +1,64 @@
-//  ignore_for_file: must_be_immutable, library_private_types_in_public_api, avoid_print, unrelated_type_equality_checks
-
+import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
+import 'package:arabic_names/Model/names_model.dart';
+import 'package:arabic_names/ads/banner_ad_bar.dart';
 import 'package:arabic_names/utils/constants.dart';
+import 'package:arabic_names/widgets/app_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
-import '../Model/names_model.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-final TextStyle ktextStyle = TextStyle(
-  fontSize: 16,
-  color: Colors.white,
-);
+const TextStyle _textStyle = TextStyle(fontSize: 16, color: Colors.white);
+const TextStyle _boldTextStyle =
+    TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white);
 
-final TextStyle kboldTextStyle = TextStyle(
-  fontSize: 16,
-  fontWeight: FontWeight.bold,
-  color: Colors.white,
-);
+class DetailPage extends StatelessWidget {
+  const DetailPage({super.key, required this.model});
 
-class DetailPage extends StatefulWidget {
-  final int? isPageOpen;
-  final NameModel? model;
+  final NameModel model;
 
-  const DetailPage({
-    super.key,
-    this.model,
-    this.isPageOpen,
-  });
-
-  @override
-  _DetailPageState createState() => _DetailPageState();
-}
-
-class _DetailPageState extends State<DetailPage> {
-  bool isFav = false;
-  late BannerAd _bannerAd;
-  bool isAdLoaded = false;
-  InterstitialAd? _interstitialAd;
-  FavouriteBloc? favouriteBloc;
-  int _favoriteClickCount = 0;
-
-  @override
-  void initState() {
-    favouriteBloc = BlocProvider.of<FavouriteBloc>(context);
-    super.initState();
-    _initBannerAd();
-    _loadInterstitialAd();
-    isFav =
-        widget.model!.isFavourite == "1" || widget.model!.isFavourite == true;
-  }
-
-  void _initBannerAd() {
-    _bannerAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: 'ca-app-pub-9684723099725802/2015455131',
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            isAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          print('Failed to load a banner ad: $error');
-        },
-      ),
-      request: const AdRequest(),
-    );
-    _bannerAd.load();
-  }
-
-  void _loadInterstitialAd() {
-    if (_interstitialAd != null)
-      return; // Don't load if an ad is already loading/loaded
-
-    InterstitialAd.load(
-      adUnitId: 'ca-app-pub-9684723099725802/9011274170',
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          setState(() {
-            _interstitialAd = ad;
-          });
-        },
-        onAdFailedToLoad: (error) {
-          print('InterstitialAd failed to load: $error');
-          setState(() {
-            _interstitialAd = null;
-          });
-        },
-      ),
-    );
-  }
-
-  void _showInterstitialAd(VoidCallback onComplete) {
-    if (_interstitialAd == null) {
-      // If ad is not loaded, just complete the action
-      onComplete();
-      return;
-    }
-
-    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdDismissedFullScreenContent: (ad) {
-        ad.dispose();
-        setState(() {
-          _interstitialAd = null;
-        });
-        _loadInterstitialAd(); // Load the next ad
-        onComplete();
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        print('Failed to show interstitial ad: $error');
-        ad.dispose();
-        setState(() {
-          _interstitialAd = null;
-        });
-        _loadInterstitialAd(); // Load the next ad
-        onComplete();
-      },
-    );
-
-    // Show the ad
-    _interstitialAd!.show().catchError((error) {
-      print('Error showing interstitial ad: $error');
-      onComplete();
-    });
-  }
-
-  void toggleFavorite() {
-    _favoriteClickCount++;
-
-    if (_favoriteClickCount % 2 == 1) {
-      if (_interstitialAd == null) {
-        _loadInterstitialAd();
-        _executeFavoriteAction();
-      } else {
-        _showInterstitialAd(() {
-          _executeFavoriteAction();
-        });
-      }
-    } else {
-      _executeFavoriteAction();
-    }
-  }
-
-  void _executeFavoriteAction() {
-    setState(() {
-      isFav = !isFav;
-    });
-
-    widget.model!.isFavourite = isFav ? "1" : "0";
-    favouriteBloc!.add(AddtoFavourite(model: widget.model!));
-
-    if (_favoriteClickCount % 2 == 1) {
-      _loadInterstitialAd();
-    }
+  String _shareText() {
+    final lines = <String, String?>{
+      'Name': model.englishName,
+      'Arabic Name': model.urduName,
+      'Meaning': model.englishMeaning,
+      'Arabic Meaning': model.urduMeaning,
+      'Gender': model.genderLabelEn,
+      'Religion': model.englishReligion,
+      'Language': model.englishLanguage,
+      'Lucky Color': model.englishLuckyColor,
+      'Lucky Day': model.englishLuckyDay,
+      'Lucky Metal': model.englishLuckyMetals,
+      'Lucky Stone': model.englishLuckyStones,
+      'Famous Person': model.englishFamousPerson,
+      'Description': model.englishDescription,
+      'Known For': model.englishKnownFor,
+      'Occupation/Designation': model.englishOccopation,
+    };
+    return [
+      for (final entry in lines.entries)
+        if (entry.value != null) '${entry.key}: ${entry.value}',
+    ].join('\n');
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            opacity: 0.5,
-            image: AssetImage("assets/w.png"),
-            fit: BoxFit.fill,
-          ),
-        ),
+      child: AppBackground(
+        opacity: 0.5,
         child: Scaffold(
           floatingActionButton: FloatingActionButton(
             backgroundColor: Constants.primaryColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            onPressed: () {
-              Share.share(
-                'Name : ${widget.model!.englishName} \n Urdu Name : ${widget.model!.urduName} \n English Meaning : ${widget.model!.englishMeaning} \n Urdu Meaning : ${widget.model!.urduMeaning} \n Gender : ${widget.model!.gender} \n Religion : ${widget.model!.englishReligion} \n Language : ${widget.model!.englishLanguage} \n Lucky Color : ${widget.model!.englishLuckyColor} \n Lucky Day : ${widget.model!.englishLuckyDay} \n Lucky Metals : ${widget.model!.englishLuckyMetals} \n Lucky Stones : ${widget.model!.englishLuckyStones} \n Famous Person : ${widget.model!.englishFamousPerson} \n Description : ${widget.model!.englishDescription} \n Known For : ${widget.model!.englishKnownFor} \n Occupation/Designation : ${widget.model!.englishOccopation}',
-              );
-            },
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            onPressed: () => Share.share(_shareText()),
             child: const Icon(Icons.share),
           ),
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             leading: IconButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                icon: const Icon(Icons.keyboard_backspace_outlined)),
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.keyboard_backspace_outlined),
+            ),
             automaticallyImplyLeading: false,
             title: const Text('Islamic Names'),
             bottom: const TabBar(
@@ -200,159 +69,94 @@ class _DetailPageState extends State<DetailPage> {
               ],
             ),
             actions: [
-              IconButton(
-                onPressed: toggleFavorite,
-                icon: Icon(
-                  isFav
-                      ? Icons.favorite_outlined
-                      : Icons.favorite_outline_sharp,
-                  color: isFav ? Colors.red : Colors.black,
-                ),
+              BlocBuilder<FavouriteBloc, FavouriteState>(
+                builder: (context, state) {
+                  final isFav = state is FavouriteSuccess && state.keys.contains(model.key);
+                  return IconButton(
+                    onPressed: () =>
+                        context.read<FavouriteBloc>().add(ToggleFavourite(model)),
+                    icon: Icon(
+                      isFav ? Icons.favorite_outlined : Icons.favorite_outline_sharp,
+                      color: isFav ? Colors.red : Colors.black,
+                    ),
+                  );
+                },
               ),
             ],
             centerTitle: true,
           ),
           body: TabBarView(
             children: [
-              SingleChildScrollView(
-                child: Container(
-                  alignment: Alignment.centerRight,
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    20,
-                    20,
-                    isAdLoaded ? _bannerAd.size.height.toDouble() + 20 : 20,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: _buildUrduContent(),
-                  ),
-                ),
-              ),
-              SingleChildScrollView(
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    20,
-                    20,
-                    isAdLoaded ? _bannerAd.size.height.toDouble() + 20 : 20,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _buildEnglishContent(),
-                  ),
-                ),
-              ),
+              _buildTab(_arabicRows(), CrossAxisAlignment.end, Alignment.centerRight),
+              _buildTab(_englishRows(), CrossAxisAlignment.start, Alignment.centerLeft),
             ],
           ),
-          bottomNavigationBar: isAdLoaded
-              ? SafeArea(
-                  child: Container(
-                    height: _bannerAd.size.height.toDouble(),
-                    width: _bannerAd.size.width.toDouble(),
-                    child: AdWidget(ad: _bannerAd),
-                  ),
-                )
-              : null,
+          bottomNavigationBar: const BannerAdBar(),
         ),
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _bannerAd.dispose();
-    _interstitialAd?.dispose();
-    setState(() {
-      _interstitialAd = null;
-    });
-    super.dispose();
+  Widget _buildTab(
+    List<Widget> rows,
+    CrossAxisAlignment crossAxisAlignment,
+    Alignment alignment,
+  ) {
+    return SingleChildScrollView(
+      child: Container(
+        alignment: alignment,
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: crossAxisAlignment, children: rows),
+      ),
+    );
   }
 
-  //  ... (keep all existing properties and methods)
-
-  Widget _buildInfoRow(String label, String? value, {bool isUrdu = false}) {
-    if (value == null || value.isEmpty || value == "null") {
-      return const SizedBox.shrink();
-    }
+  /// A "label : value" row; nothing is drawn when [value] is empty.
+  Widget _infoRow(String label, String? value, {bool arabic = false}) {
+    if (value == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Wrap(
         children: [
-          Text(
-            isUrdu ? '$value : ' : '$label : ',
-            style: isUrdu
-                ? ktextStyle.copyWith(color: Colors.white)
-                : kboldTextStyle.copyWith(color: Colors.white),
-          ),
-          Text(
-            isUrdu ? label : value,
-            style: isUrdu
-                ? kboldTextStyle.copyWith(color: Colors.white)
-                : ktextStyle.copyWith(color: Colors.white),
-          ),
+          Text(arabic ? '$value : ' : '$label : ',
+              style: arabic ? _textStyle : _boldTextStyle),
+          Text(arabic ? label : value, style: arabic ? _boldTextStyle : _textStyle),
         ],
       ),
     );
   }
 
-  List<Widget> _buildEnglishContent() {
-    return [
-      _buildInfoRow('Name', widget.model!.englishName),
-      _buildInfoRow('Meaning', widget.model!.englishMeaning),
-      _buildInfoRow(
-          'Gender',
-          widget.model?.gender.toString() == "Male" ||
-                  widget.model?.gender.toString() == "Boy" ||
-                  widget.model?.gender.toString() == "Larka"
-              ? "Male"
-              : "Male"),
-      _buildInfoRow('Religion', widget.model!.englishReligion),
-      _buildInfoRow('Language', widget.model!.englishLanguage),
-      _buildInfoRow('Lucky Number', widget.model?.urduLuckyNumber),
-      _buildInfoRow('Lucky Color', widget.model!.englishLuckyColor),
-      _buildInfoRow('Lucky Day', widget.model!.englishLuckyDay),
-      _buildInfoRow('Lucky Metal', widget.model!.englishLuckyMetals),
-      _buildInfoRow('Lucky Stone', widget.model!.englishLuckyStones),
-      _buildInfoRow('Famous Person', widget.model!.englishFamousPerson),
-      _buildInfoRow('Description', widget.model!.englishDescription),
-      _buildInfoRow('Known For', widget.model!.englishKnownFor),
-      _buildInfoRow('Occupation/Designation', widget.model!.englishOccopation),
-    ]
-        .where((widget) => widget is! SizedBox)
-        .toList(); // Filter out the empty rows
-  }
+  List<Widget> _englishRows() => [
+        _infoRow('Name', model.englishName),
+        _infoRow('Meaning', model.englishMeaning),
+        _infoRow('Gender', model.genderLabelEn),
+        _infoRow('Religion', model.englishReligion),
+        _infoRow('Language', model.englishLanguage),
+        _infoRow('Lucky Number', model.urduLuckyNumber),
+        _infoRow('Lucky Color', model.englishLuckyColor),
+        _infoRow('Lucky Day', model.englishLuckyDay),
+        _infoRow('Lucky Metal', model.englishLuckyMetals),
+        _infoRow('Lucky Stone', model.englishLuckyStones),
+        _infoRow('Famous Person', model.englishFamousPerson),
+        _infoRow('Description', model.englishDescription),
+        _infoRow('Known For', model.englishKnownFor),
+        _infoRow('Occupation/Designation', model.englishOccopation),
+      ];
 
-  List<Widget> _buildUrduContent() {
-    return [
-      _buildInfoRow('الاسم', widget.model!.urduName, isUrdu: true),
-      _buildInfoRow('المعنى', widget.model?.urduMeaning, isUrdu: true),
-      _buildInfoRow(
-          'الجنس',
-          widget.model?.gender.toString() == "Male" ||
-                  widget.model?.gender.toString() == "Boy" ||
-                  widget.model?.gender.toString() == "Larka"
-              ? "ذكر"
-              : "أنثى",
-          isUrdu: true),
-      _buildInfoRow('الديانة', widget.model!.urduReligion, isUrdu: true),
-      _buildInfoRow('اللغة', widget.model!.urduLanguage, isUrdu: true),
-      _buildInfoRow('اللون المفضل', widget.model!.urduLuckyColor, isUrdu: true),
-      _buildInfoRow('اليوم المفضل', widget.model!.urduLuckyDay, isUrdu: true),
-      _buildInfoRow('المعدن المفضل', widget.model!.urduLuckyMetals,
-          isUrdu: true),
-      _buildInfoRow('الرقم المفضل', widget.model!.urduLuckyNumber,
-          isUrdu: true),
-      _buildInfoRow('الحجر المفضل', widget.model!.urduLuckyStones,
-          isUrdu: true),
-      _buildInfoRow('الشخصية المشهورة', widget.model!.urduFamousPerson,
-          isUrdu: true),
-      _buildInfoRow('الوصف', widget.model!.urduDescription, isUrdu: true),
-      _buildInfoRow('مشهور بـ', widget.model!.urduKnownFor, isUrdu: true),
-      _buildInfoRow('الوظيفة / المهنة', widget.model!.urduOccopation,
-          isUrdu: true),
-    ]
-        .where((widget) => widget is! SizedBox)
-        .toList(); // Filter out the empty rows
-  }
+  List<Widget> _arabicRows() => [
+        _infoRow('الاسم', model.urduName, arabic: true),
+        _infoRow('المعنى', model.urduMeaning, arabic: true),
+        _infoRow('الجنس', model.genderLabelAr, arabic: true),
+        _infoRow('الديانة', model.urduReligion, arabic: true),
+        _infoRow('اللغة', model.urduLanguage, arabic: true),
+        _infoRow('اللون المفضل', model.urduLuckyColor, arabic: true),
+        _infoRow('اليوم المفضل', model.urduLuckyDay, arabic: true),
+        _infoRow('المعدن المفضل', model.urduLuckyMetals, arabic: true),
+        _infoRow('الرقم المفضل', model.urduLuckyNumber, arabic: true),
+        _infoRow('الحجر المفضل', model.urduLuckyStones, arabic: true),
+        _infoRow('الشخصية المشهورة', model.urduFamousPerson, arabic: true),
+        _infoRow('الوصف', model.urduDescription, arabic: true),
+        _infoRow('مشهور بـ', model.urduKnownFor, arabic: true),
+        _infoRow('الوظيفة / المهنة', model.urduOccopation, arabic: true),
+      ];
 }

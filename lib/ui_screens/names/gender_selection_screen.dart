@@ -1,222 +1,118 @@
-// ignore_for_file: avoid_print, library_private_types_in_public_api, file_names, unused_element
-
-import 'package:arabic_names/ui_screens/names/all_names/all_names_selection_screen.dart';
-import 'package:arabic_names/ui_screens/names/trending_names/trending_names_selection_screen.dart';
-import 'package:arabic_names/ui_screens/names/celebrity_names/celebrity_names_selection_screen.dart';
+import 'package:arabic_names/Model/names_model.dart';
+import 'package:arabic_names/ads/ad_units.dart';
+import 'package:arabic_names/ui_screens/names/category_screen.dart';
+import 'package:arabic_names/widgets/app_background.dart';
+import 'package:arabic_names/widgets/pill_button.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:arabic_names/utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Main menu: pick which collection of names to browse.
 class GenderSelectionScreen extends StatefulWidget {
   const GenderSelectionScreen({super.key});
 
   @override
-  _GenderSelectionScreenState createState() => _GenderSelectionScreenState();
+  State<GenderSelectionScreen> createState() => _GenderSelectionScreenState();
 }
 
 class _GenderSelectionScreenState extends State<GenderSelectionScreen> {
-  AppOpenAd? appOpenAd;
-  InterstitialAd? _interstitialAd;
+  /// Ask for a review on every 3rd launch, show an app-open ad on the others.
+  static const int _reviewEveryLaunches = 3;
 
-  final InAppReview inAppReview = InAppReview.instance;
+  final InAppReview _inAppReview = InAppReview.instance;
+  AppOpenAd? _appOpenAd;
 
   @override
   void initState() {
     super.initState();
-    _checkAndShowRatingDialog();
-    _loadInterstitialAd();
+    _reviewOrShowAd();
   }
 
-  void showRatingDialog() async {
-    print('Checking in-app review availability...');
-    bool isAvailable = await inAppReview.isAvailable();
-    print('In-app review available: $isAvailable');
+  Future<void> _reviewOrShowAd() async {
+    final prefs = await SharedPreferences.getInstance();
+    final launches = (prefs.getInt('appLaunchCount') ?? 0) + 1;
 
-    if (isAvailable) {
-      print('Requesting in-app review...');
-      inAppReview.requestReview().then((_) {
-        print('In-app review requested.');
-      }).catchError((e) {
-        print('Failed to request in-app review: $e');
-      });
+    if (launches >= _reviewEveryLaunches) {
+      await prefs.setInt('appLaunchCount', 0);
+      await _requestReview();
     } else {
-      print('In-app review not available, trying to open store listing...');
-      inAppReview.openStoreListing(appStoreId: '8475602794689359855').then((_) {
-        print('Store listing opened.');
-      }).catchError((e) {
-        print('Failed to open store listing: $e');
-      });
+      await prefs.setInt('appLaunchCount', launches);
+      _loadAppOpenAd();
     }
   }
 
-  void _checkAndShowRatingDialog() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int appLaunchCount = (prefs.getInt('appLaunchCount') ?? 0) + 1;
-
-    print("App Launch Count: $appLaunchCount");
-
-    if (appLaunchCount >= 3) {
-      // Change the threshold as needed
-      showRatingDialog();
-      prefs.setInt('appLaunchCount', 0); // Reset the count
-    } else {
-      prefs.setInt('appLaunchCount', appLaunchCount);
-      loadAppOpenAd();
+  Future<void> _requestReview() async {
+    try {
+      if (await _inAppReview.isAvailable()) {
+        await _inAppReview.requestReview();
+      } else {
+        await _inAppReview.openStoreListing();
+      }
+    } catch (e) {
+      debugPrint('In-app review failed: $e');
     }
   }
 
-  void loadAppOpenAd() {
+  void _loadAppOpenAd() {
     AppOpenAd.load(
-      adUnitId: 'ca-app-pub-9684723099725802/7545879768',
+      adUnitId: AdUnits.appOpen,
       request: const AdRequest(),
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
-          appOpenAd = ad;
-          showAppOpenAd();
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
+          _appOpenAd = ad;
+          ad.show();
         },
-        onAdFailedToLoad: (error) {
-          print('AppOpenAd failed to load: $error');
-        },
+        onAdFailedToLoad: (error) => debugPrint('AppOpenAd failed to load: $error'),
       ),
     );
-  }
-
-  void _loadInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: 'ca-app-pub-9684723099725802/9011274170',
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-        },
-        onAdFailedToLoad: (error) {
-          print('InterstitialAd failed to load: $error');
-        },
-      ),
-    );
-  }
-
-  void _showInterstitialAd(VoidCallback onComplete) {
-    if (_interstitialAd != null) {
-      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (ad) {
-          ad.dispose();
-          _loadInterstitialAd(); // Load the next ad
-          onComplete();
-        },
-        onAdFailedToShowFullScreenContent: (ad, error) {
-          ad.dispose();
-          _loadInterstitialAd();
-          onComplete();
-        },
-      );
-      _interstitialAd!.show();
-    } else {
-      onComplete();
-    }
-  }
-
-  void showAppOpenAd() {
-    if (appOpenAd != null) {
-      appOpenAd!.show();
-    }
   }
 
   @override
   void dispose() {
-    appOpenAd?.dispose();
-    _interstitialAd?.dispose();
+    _appOpenAd?.dispose();
     super.dispose();
+  }
+
+  void _open(NameCategory category) {
+    Navigator.of(context).push(
+      PageTransition(
+        type: PageTransitionType.fade,
+        child: CategoryScreen(category: category),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/w.png"),
-            fit: BoxFit.cover,
-          ),
-        ),
+      body: AppBackground(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildButton(
-                'جميع الأسماء',
-                'assets/popular.png',
-                () => Navigator.of(context).push(
-                  PageTransition(
-                    type: PageTransitionType.fade,
-                    child: const AllNamesSelectionScreen(),
-                  ),
-                ),
+              PillButton(
+                label: 'جميع الأسماء',
+                imageAsset: 'assets/popular.png',
+                onPressed: () => _open(NameCategory.all),
               ),
               const SizedBox(height: 6),
-              _buildButton(
-                'الأسماء الشائعة',
-                'assets/trending.png',
-                () => Navigator.of(context).push(
-                  PageTransition(
-                    type: PageTransitionType.fade,
-                    child: const TrendingNamesSelectionScreen(),
-                  ),
-                ),
+              PillButton(
+                label: 'الأسماء الشائعة',
+                imageAsset: 'assets/trending.png',
+                onPressed: () => _open(NameCategory.trending),
               ),
               const SizedBox(height: 6),
-              _buildButton(
-                'أسماء المشاهير',
-                'assets/celebrity.png',
-                () => Navigator.of(context).push(
-                  PageTransition(
-                    type: PageTransitionType.fade,
-                    child: const CelebrityNamesSelectionScreen(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildButton(String text, String assetPath, VoidCallback onPressed) {
-    return MaterialButton(
-      onPressed: () {
-        // _showInterstitialAd(onPressed);
-        onPressed();
-      },
-      color: Constants.buttonColor,
-      shape: const StadiumBorder(),
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: SizedBox(
-          width: 170,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                height: 30,
-                width: 30,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  backgroundImage: AssetImage(assetPath),
-                ),
-              ),
-              Text(
-                text,
-                style: TextStyle(
-                  color: Constants.textOnButtonColor,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              PillButton(
+                label: 'أسماء المشاهير',
+                imageAsset: 'assets/celebrity.png',
+                onPressed: () => _open(NameCategory.celebrity),
               ),
             ],
           ),
