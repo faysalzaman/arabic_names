@@ -10,8 +10,6 @@ workflows:
       # Code signing identities > Android keystores.
       android_signing:
         - upload-key
-      groups:
-        - production
     scripts:
       - name: Fetch packages
         script: flutter pub get
