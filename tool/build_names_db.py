@@ -30,6 +30,9 @@ SOURCES = [
     ("trending_girls.json", "trending", "Female"),
     ("cboys.json", "celebrity", "Male"),
     ("cgirls.json", "celebrity", "Female"),
+    # Unique names from the CC0 muslim-names-dataset (wpacademy on Hugging Face).
+    ("cc0_names.json", "all", "Male"),
+    ("cc0_names_2.json", "all", "Male"),
 ]
 
 GENDER_MAP = {

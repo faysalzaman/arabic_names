@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:arabic_names/DataBase/database_location.dart';
 import 'package:arabic_names/Model/names_model.dart';
 import 'package:arabic_names/utils/arabic_text.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -14,7 +16,7 @@ class NamesRepository {
   static final NamesRepository instance = NamesRepository._();
 
   static const String _assetPath = 'assets/names.db';
-  static const String _dbFile = 'names_v1.db';
+  static const String _dbFile = 'names_v3.db';
 
   // Every column except `search`, which is only used in WHERE clauses.
   static const String _columns =
@@ -38,18 +40,21 @@ class NamesRepository {
   }
 
   Future<Database> _open() async {
-    final dir = await getDatabasesPath();
+    final dir = await databasesDirectory();
     final path = '$dir/$_dbFile';
 
     if (!await databaseExists(path)) {
-      await Directory(dir).create(recursive: true);
       final data = await rootBundle.load(_assetPath);
-      final tmp = File('$path.tmp');
-      await tmp.writeAsBytes(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-        flush: true,
-      );
-      await tmp.rename(path);
+      final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      if (kIsWeb) {
+        // The browser has no file system, so write into the web database storage.
+        await databaseFactory.writeDatabaseBytes(path, bytes);
+      } else {
+        await Directory(dir).create(recursive: true);
+        final tmp = File('$path.tmp');
+        await tmp.writeAsBytes(bytes, flush: true);
+        await tmp.rename(path);
+      }
       // The old app created an empty Names.db that was never used.
       deleteDatabase('$dir/Names.db').ignore();
     }
@@ -87,6 +92,26 @@ class NamesRepository {
       args,
     );
     return rows.map(NameModel.fromDb).toList(growable: false);
+  }
+
+  /// A name with a meaning that changes once a day (same name all day long).
+  Future<NameModel?> nameOfTheDay(DateTime date) async {
+    final db = await _database();
+    const where = "category = 'all' AND UrduMeaning IS NOT NULL AND UrduMeaning != ''";
+    final count = Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM names WHERE $where'),
+        ) ??
+        0;
+    if (count == 0) return null;
+
+    final day = DateTime.utc(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+        Duration.millisecondsPerDay;
+    // Step by a prime so consecutive days land far apart in the A-Z order.
+    final rows = await db.rawQuery(
+      'SELECT $_columns FROM names WHERE $where ORDER BY id LIMIT 1 OFFSET ?',
+      [(day * 7919) % count],
+    );
+    return rows.isEmpty ? null : NameModel.fromDb(rows.first);
   }
 
   /// Looks names up by [nameKey]; the result follows the order of [keys].

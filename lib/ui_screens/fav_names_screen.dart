@@ -5,6 +5,7 @@ import 'package:arabic_names/theme/app_theme.dart';
 import 'package:arabic_names/ui_screens/detail_screen.dart';
 import 'package:arabic_names/widgets/app_background.dart';
 import 'package:arabic_names/widgets/name_tile.dart';
+import 'package:arabic_names/widgets/ornaments.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -40,11 +41,23 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.favorite_border, size: 64, color: AppColors.muted),
-                      SizedBox(height: 16),
+                      StarMedallion(
+                        size: 96,
+                        child: Icon(
+                          Icons.favorite_border_rounded,
+                          size: 40,
+                          color: AppColors.favourite,
+                        ),
+                      ),
+                      SizedBox(height: 18),
                       Text(
                         'لا توجد أسماء مفضلة بعد',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
+                        style: TextStyle(
+                          fontFamily: AppFonts.naskh,
+                          color: AppColors.ink,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(height: 6),
                       Text(
@@ -58,7 +71,7 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
               );
             }
             return ListView.builder(
-              padding: const EdgeInsets.only(top: 4, bottom: 12),
+              padding: const EdgeInsets.only(top: 12, bottom: 16),
               itemCount: state.names.length,
               itemBuilder: (context, index) {
                 final name = state.names[index];

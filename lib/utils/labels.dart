@@ -15,8 +15,8 @@ extension NameCategoryLabels on NameCategory {
       };
 
   IconData get icon => switch (this) {
-        NameCategory.all => Icons.menu_book_outlined,
-        NameCategory.trending => Icons.trending_up,
-        NameCategory.celebrity => Icons.star_outline,
+        NameCategory.all => Icons.menu_book_rounded,
+        NameCategory.trending => Icons.trending_up_rounded,
+        NameCategory.celebrity => Icons.star_rounded,
       };
 }

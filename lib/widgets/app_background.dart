@@ -1,27 +1,24 @@
 import 'package:arabic_names/theme/app_theme.dart';
+import 'package:arabic_names/widgets/ornaments.dart';
 import 'package:flutter/material.dart';
 
-/// The ornamental backdrop shared by every screen. The asset is a 900 px wide JPEG of
-/// about 160 KB (the old w.png was 7.7 MB). It is faded into the theme background so
-/// text and cards stay readable on top of it.
+/// Ivory "paper" shared by every screen, with a barely visible geometric pattern so
+/// cards and text stay perfectly readable on top of it.
 class AppBackground extends StatelessWidget {
-  const AppBackground({super.key, required this.child, this.opacity = 0.35});
+  const AppBackground({super.key, required this.child});
 
   final Widget child;
-  final double opacity;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        image: DecorationImage(
-          image: const AssetImage('assets/bg.jpg'),
-          fit: BoxFit.cover,
-          opacity: opacity,
-        ),
+    return ColoredBox(
+      color: AppColors.background,
+      child: Stack(
+        children: [
+          const Positioned.fill(child: GeometricPattern(opacity: 0.07, tile: 72)),
+          Positioned.fill(child: child),
+        ],
       ),
-      child: child,
     );
   }
 }

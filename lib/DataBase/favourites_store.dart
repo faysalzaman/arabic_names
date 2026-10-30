@@ -1,3 +1,4 @@
+import 'package:arabic_names/DataBase/database_location.dart';
 import 'package:arabic_names/utils/arabic_text.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -16,7 +17,7 @@ class FavouritesStore {
   }
 
   Future<Database> _open() async {
-    final dir = await getDatabasesPath();
+    final dir = await databasesDirectory();
     final db = await openDatabase(
       '$dir/favourites_v2.db',
       version: 1,

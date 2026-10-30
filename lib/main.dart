@@ -4,15 +4,22 @@ import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
 import 'package:arabic_names/ads/interstitial_manager.dart';
 import 'package:arabic_names/theme/app_theme.dart';
 import 'package:arabic_names/ui_screens/splash_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 // it will run in fvm version 3.32.0
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Flutter web has no native SQLite, so use the WASM build instead (see web/).
+  // The no-worker variant is used because the shared-worker one fails to start here.
+  if (kIsWeb) databaseFactory = databaseFactoryFfiWebNoWebWorker;
 
   // Ads must never delay the first frame.
   unawaited(

@@ -10,6 +10,7 @@ import 'package:arabic_names/ui_screens/fav_names_screen.dart';
 import 'package:arabic_names/utils/labels.dart';
 import 'package:arabic_names/widgets/app_background.dart';
 import 'package:arabic_names/widgets/name_tile.dart';
+import 'package:arabic_names/widgets/ornaments.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -24,24 +25,43 @@ const List<String> _alphabet = [
 /// Browse one [NameCategory]: boys/girls switch, search, A-Z rail, tap to open a name.
 /// Each visit gets its own [NamesBloc], so a list never shows another list's data.
 class NamesListScreen extends StatelessWidget {
-  const NamesListScreen({super.key, required this.category});
+  const NamesListScreen({
+    super.key,
+    required this.category,
+    this.initialGender = NameGender.male,
+    this.autofocusSearch = false,
+  });
 
   final NameCategory category;
+  final NameGender initialGender;
+
+  /// Opens with the keyboard up (from the home screen search box).
+  final bool autofocusSearch;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => NamesBloc()
-        ..add(LoadNames(category: category, gender: NameGender.male)),
-      child: _NamesListView(category: category),
+        ..add(LoadNames(category: category, gender: initialGender)),
+      child: _NamesListView(
+        category: category,
+        initialGender: initialGender,
+        autofocusSearch: autofocusSearch,
+      ),
     );
   }
 }
 
 class _NamesListView extends StatefulWidget {
-  const _NamesListView({required this.category});
+  const _NamesListView({
+    required this.category,
+    required this.initialGender,
+    required this.autofocusSearch,
+  });
 
   final NameCategory category;
+  final NameGender initialGender;
+  final bool autofocusSearch;
 
   @override
   State<_NamesListView> createState() => _NamesListViewState();
@@ -54,7 +74,7 @@ class _NamesListViewState extends State<_NamesListView> {
 
   Timer? _searchDebounce;
   Timer? _scrollDebounce;
-  NameGender _gender = NameGender.male;
+  late NameGender _gender = widget.initialGender;
   List<NameModel> _names = const [];
   String? _selectedLetter;
   bool _isJumping = false;
@@ -144,7 +164,7 @@ class _NamesListViewState extends State<_NamesListView> {
           actions: [
             IconButton(
               tooltip: 'المفضلة',
-              icon: const Icon(Icons.favorite_border),
+              icon: const Icon(Icons.favorite_border_rounded),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const FavouritesScreen()),
@@ -166,7 +186,7 @@ class _NamesListViewState extends State<_NamesListView> {
                     return const Center(
                       child: Text(
                         'تعذر تحميل الأسماء',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        style: TextStyle(color: AppColors.ink, fontSize: 16),
                       ),
                     );
                   }
@@ -182,61 +202,86 @@ class _NamesListViewState extends State<_NamesListView> {
   }
 
   Widget _buildControls() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+    return PatternHeader(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       child: Column(
         children: [
-          SegmentedButton<NameGender>(
-            expandedInsets: EdgeInsets.zero,
-            showSelectedIcon: false,
-            style: SegmentedButton.styleFrom(
-              backgroundColor: AppColors.surface.withValues(alpha: 0.9),
-              foregroundColor: Colors.white,
-              selectedBackgroundColor: AppColors.accent,
-              selectedForegroundColor: AppColors.onAccent,
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
             ),
-            segments: const [
-              ButtonSegment(
-                value: NameGender.male,
-                icon: Icon(Icons.boy),
-                label: Text('الأولاد'),
-              ),
-              ButtonSegment(
-                value: NameGender.female,
-                icon: Icon(Icons.girl),
-                label: Text('الفتيات'),
-              ),
-            ],
-            selected: {_gender},
-            onSelectionChanged: (selection) => _onGenderChanged(selection.first),
+            child: Row(
+              children: [
+                _genderPill(NameGender.male, 'الأولاد', Icons.boy_rounded, AppColors.boy),
+                _genderPill(NameGender.female, 'البنات', Icons.girl_rounded, AppColors.girl),
+              ],
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextField(
             controller: _searchController,
             onChanged: _onSearchChanged,
+            autofocus: widget.autofocusSearch,
             textInputAction: TextInputAction.search,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppColors.ink, fontSize: 16),
             decoration: InputDecoration(
               hintText: 'ابحث بالاسم أو المعنى',
-              hintStyle: const TextStyle(color: AppColors.muted),
-              filled: true,
-              fillColor: AppColors.surface.withValues(alpha: 0.9),
-              prefixIcon: const Icon(Icons.search, color: AppColors.muted),
+              prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchController.text.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'مسح',
-                      icon: const Icon(Icons.close, color: AppColors.muted),
+                      icon: const Icon(Icons.close_rounded),
                       onPressed: _clearSearch,
                     ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              contentPadding: EdgeInsets.zero,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _genderPill(NameGender gender, String label, IconData icon, Color color) {
+    final selected = _gender == gender;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: selected ? null : () => _onGenderChanged(gender),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 22, color: selected ? color : Colors.white70),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: selected ? color : Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -247,12 +292,22 @@ class _NamesListViewState extends State<_NamesListView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off, size: 56, color: AppColors.muted),
-            const SizedBox(height: 12),
+            const StarMedallion(
+              size: 72,
+              child: Icon(Icons.search_off_rounded, size: 30, color: AppColors.emerald),
+            ),
+            const SizedBox(height: 14),
             Text(
               state.query.isEmpty ? 'لا توجد أسماء' : 'لا توجد نتائج لـ "${state.query}"',
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: const TextStyle(color: AppColors.ink, fontSize: 17, fontWeight: FontWeight.bold),
             ),
+            if (state.query.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              const Text(
+                'جرّب كتابة الاسم بطريقة أخرى',
+                style: TextStyle(color: AppColors.muted, fontSize: 14),
+              ),
+            ],
           ],
         ),
       );
@@ -261,13 +316,20 @@ class _NamesListViewState extends State<_NamesListView> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              '${state.names.length} اسم',
-              style: const TextStyle(color: AppColors.muted, fontSize: 13),
-            ),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.gold),
+              const SizedBox(width: 6),
+              Text(
+                '${state.names.length} اسم',
+                style: const TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -280,7 +342,7 @@ class _NamesListViewState extends State<_NamesListView> {
                     final favouriteKeys =
                         favourites is FavouriteSuccess ? favourites.keys : const <String>{};
                     return ScrollablePositionedList.builder(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(top: 2, bottom: 16),
                       physics: const BouncingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
@@ -312,10 +374,16 @@ class _NamesListViewState extends State<_NamesListView> {
   }
 
   Widget _buildLetterRail() {
-    return SizedBox(
-      width: 34,
+    return Container(
+      width: 38,
+      margin: const EdgeInsetsDirectional.only(start: 8, top: 4, bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: AppColors.line),
+      ),
       child: ListView(
-        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(vertical: 4),
         physics: const BouncingScrollPhysics(),
         children: [for (final letter in _alphabet) _buildLetter(letter)],
       ),
@@ -328,19 +396,21 @@ class _NamesListViewState extends State<_NamesListView> {
       behavior: HitTestBehavior.opaque,
       onTap: () => _scrollToLetter(letter),
       child: Container(
-        height: 28,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        height: 30,
+        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? AppColors.accent : Colors.transparent,
+          color: selected ? AppColors.emerald : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Text(
           letter,
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            color: selected ? AppColors.onAccent : AppColors.muted,
+            fontFamily: AppFonts.naskh,
+            fontSize: 16,
+            height: 1.3,
+            fontWeight: FontWeight.bold,
+            color: selected ? Colors.white : AppColors.emerald,
           ),
         ),
       ),
