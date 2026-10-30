@@ -1,0 +1,53 @@
+workflows:
+  production-aab:
+    name: Production AAB
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      java: 17
+      # Name of the Android keystore you add under Codemagic > Team/App settings >
+      # Code signing identities > Android keystores.
+      android_signing:
+        - upload-key
+      groups:
+        - production
+    scripts:
+      - name: Fetch packages
+        script: flutter pub get
+
+      - name: Install the NDK pinned in android/app/build.gradle
+        script: |
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "ndk;29.0.13113456" > /dev/null
+
+      # Codemagic exposes the keystore it decrypted for this build as CM_* variables.
+      - name: Write signing config for Gradle
+        script: |
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=%s\n' \
+            "$CM_KEYSTORE_PASSWORD" "$CM_KEY_PASSWORD" "$CM_KEY_ALIAS" "$CM_KEYSTORE_PATH" \
+            > android/key.properties
+
+      - name: Build release AAB
+        script: flutter build appbundle --release
+
+      # The public certificate is what Play Console needs for the upload key reset.
+      # It contains no secrets, so it is safe to download as an artifact.
+      - name: Export upload certificate
+        script: |
+          keytool -export -rfc \
+            -keystore "$CM_KEYSTORE_PATH" -storepass "$CM_KEYSTORE_PASSWORD" \
+            -alias "$CM_KEY_ALIAS" -file upload_certificate.pem
+
+    artifacts:
+      - build/app/outputs/bundle/release/app-release.aab
+      - upload_certificate.pem
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: ci/apk-build
+          include: true
+          source: true
