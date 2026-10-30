@@ -27,8 +27,19 @@ jobs:
 
       # Profile builds are signed with the debug key, so the APK installs
       # without the release keystore (which must not live in the repo).
+      # On failure the tail of the log is copied into an annotation, which is
+      # readable through the public API without signing in.
       - name: Build APK
-        run: flutter build apk --profile
+        shell: bash
+        run: |
+          set +e
+          flutter build apk --profile 2>&1 | tee build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            msg=$(grep -v "available)" build.log | tail -n 45 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Build log tail::${msg}"
+          fi
+          exit "$status"
 
       - uses: actions/upload-artifact@v4
         with:
