@@ -1,230 +1,99 @@
-// ignore_for_file: unnecessary_null_comparison, library_private_types_in_public_api
-
+import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
+import 'package:arabic_names/ads/banner_ad_bar.dart';
+import 'package:arabic_names/ads/interstitial_manager.dart';
+import 'package:arabic_names/theme/app_theme.dart';
+import 'package:arabic_names/ui_screens/detail_screen.dart';
+import 'package:arabic_names/widgets/app_background.dart';
+import 'package:arabic_names/widgets/name_tile.dart';
+import 'package:arabic_names/widgets/ornaments.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:arabic_names/Bloc/FavouriteBloc/favourite_bloc.dart';
-import 'package:arabic_names/ui_screens/home_screen.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../Model/names_model.dart';
-import 'detail_screen.dart';
 
 class FavouritesScreen extends StatefulWidget {
   const FavouritesScreen({super.key});
 
   @override
-  _FavouritesScreenState createState() => _FavouritesScreenState();
+  State<FavouritesScreen> createState() => _FavouritesScreenState();
 }
 
 class _FavouritesScreenState extends State<FavouritesScreen> {
-  Icon customIcon = const Icon(Icons.search);
-  bool fav = false;
-
-  List<NameModel> listofNames = [];
-  String? gender;
-
-  List<NameModel> namemodel = [];
-  String? names;
-
-  FavouriteBloc? favouriteBloc;
-
-  late BannerAd _bannerAd;
-  bool isAdLoaded = false;
-  InterstitialAd? _interstitialAd;
-
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  int _clickCount = 0;
-
   @override
   void initState() {
     super.initState();
-    favouriteBloc = BlocProvider.of<FavouriteBloc>(context);
-    favouriteBloc!.add(GetFavourites());
-    _initBannerAd();
-    _loadInterstitialAd();
-  }
-
-  void _initBannerAd() {
-    _bannerAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: 'ca-app-pub-9684723099725802/2015455131',
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            isAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          print('Failed to load a banner ad: $error');
-        },
-      ),
-      request: const AdRequest(),
-    );
-    _bannerAd.load();
-  }
-
-  void _loadInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: 'ca-app-pub-9684723099725802/9011274170',
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-        },
-        onAdFailedToLoad: (error) {
-          print('InterstitialAd failed to load: $error');
-        },
-      ),
-    );
-  }
-
-  void _showInterstitialAd(VoidCallback onComplete) {
-    _clickCount++;
-
-    if (_clickCount % 2 == 0 && _interstitialAd != null) {
-      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (ad) {
-          ad.dispose();
-          _loadInterstitialAd();
-          onComplete();
-        },
-        onAdFailedToShowFullScreenContent: (ad, error) {
-          ad.dispose();
-          _loadInterstitialAd();
-          onComplete();
-        },
-      );
-      _interstitialAd!.show();
-    } else {
-      onComplete();
-    }
+    context.read<FavouriteBloc>().add(GetFavourites());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage("assets/w.png"),
-          fit: BoxFit.fill,
-        ),
-      ),
+    return AppBackground(
       child: Scaffold(
-        key: _scaffoldKey,
         backgroundColor: Colors.transparent,
-        drawer: const MyDrawerWidget(),
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          actions: [
-            IconButton(
-              onPressed: () {
-                _scaffoldKey.currentState!.openDrawer();
-              },
-              icon: const Icon(Icons.menu),
-            ),
-          ],
-          title: const Text(
-            "الأسماء المفضلة",
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: true,
-        ),
+        appBar: AppBar(title: const Text('الأسماء المفضلة')),
         body: BlocBuilder<FavouriteBloc, FavouriteState>(
           builder: (context, state) {
-            if (state is FavouriteLoading) {
+            if (state is! FavouriteSuccess) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state.names.isEmpty) {
               return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 10,
-                  strokeCap: StrokeCap.round,
-                ),
-              );
-            }
-            if (state is FavouriteSuccess) {
-              namemodel = state.model.toSet().toList();
-              if (namemodel.isEmpty || namemodel == null) {
-                return const Center(
-                  child: Text(
-                    'لا توجد أسماء مفضلة بعد',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                );
-              }
-              return ListView.builder(
-                padding: EdgeInsets.only(
-                  bottom:
-                      isAdLoaded ? _bannerAd.size.height.toDouble() + 10 : 10,
-                ),
-                itemCount: namemodel.length,
-                physics: const AlwaysScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemBuilder: (BuildContext context, int index) {
-                  String genderIcon = namemodel[index].gender == "ذكر" ||
-                          namemodel[index].gender == "صبي" ||
-                          namemodel[index].gender == "ولد"
-                      ? "👨"
-                      : "👩";
-                  return ListTile(
-                    onTap: () {
-                      _showInterstitialAd(() {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailPage(
-                              model: namemodel[index],
-                            ),
-                          ),
-                        );
-                      });
-                    },
-                    title: Text(
-                      "${namemodel[index].urduName} $genderIcon",
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StarMedallion(
+                        size: 96,
+                        child: Icon(
+                          Icons.favorite_border_rounded,
+                          size: 40,
+                          color: AppColors.favourite,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                      SizedBox(height: 18),
+                      Text(
+                        'لا توجد أسماء مفضلة بعد',
+                        style: TextStyle(
+                          fontFamily: AppFonts.naskh,
+                          color: AppColors.ink,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'اضغط على القلب بجانب أي اسم لإضافته هنا',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.muted, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 10,
-                strokeCap: StrokeCap.round,
-              ),
+            return ListView.builder(
+              padding: const EdgeInsets.only(top: 12, bottom: 16),
+              itemCount: state.names.length,
+              itemBuilder: (context, index) {
+                final name = state.names[index];
+                return NameTile(
+                  name: name,
+                  isFavourite: true,
+                  onTap: () => InterstitialManager.instance.maybeShow(() {
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => DetailPage(model: name)),
+                    );
+                  }),
+                  onToggleFavourite: () =>
+                      context.read<FavouriteBloc>().add(ToggleFavourite(name)),
+                );
+              },
             );
           },
         ),
-        bottomNavigationBar: isAdLoaded
-            ? SafeArea(
-                child: Container(
-                  height: _bannerAd.size.height.toDouble(),
-                  width: _bannerAd.size.width.toDouble(),
-                  child: AdWidget(ad: _bannerAd),
-                ),
-              )
-            : null,
+        bottomNavigationBar: const BannerAdBar(),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _bannerAd.dispose();
-    _interstitialAd?.dispose();
-    super.dispose();
   }
 }

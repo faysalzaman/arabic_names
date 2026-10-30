@@ -1,47 +1,70 @@
 // ignore_for_file: file_names
 
-class NameModel {
-  String? id;
-  String? englishName;
-  String? englishMeaning;
-  String? englishReligion;
-  String? englishLuckyDay;
-  String? englishLuckyColor;
-  String? englishLuckyStones;
-  String? englishLanguage;
-  String? englishLuckyMetals;
-  String? englishFamousPerson;
-  String? englishDescription;
-  String? englishKnownFor;
-  String? englishOccopation;
-  String? gender;
-  String? urduName;
-  String? urduMeaning;
-  String? urduReligion;
-  String? urduLuckyNumber;
-  String? urduLuckyDay;
-  String? urduLuckyColor;
-  String? urduLuckyStones;
-  String? urduLanguage;
-  String? urduLuckyMetals;
-  String? urduFamousPerson;
-  String? urduDescription;
-  String? urduKnownFor;
-  String? urduOccopation;
-  String? isFavourite;
+enum NameCategory { all, trending, celebrity }
 
-  NameModel({
+enum NameGender { male, female }
+
+String? _text(Object? value) {
+  if (value == null) return null;
+  final text = value.toString().trim();
+  return text.isEmpty || text == 'null' ? null : text;
+}
+
+class NameModel {
+  final int id;
+
+  /// Stable identity, see `nameKey` in utils/arabic_text.dart.
+  final String key;
+
+  /// First letter of the normalised Arabic name (drives the A-Z rail).
+  final String letter;
+
+  /// 'Male', 'Female' or 'Unisex'.
+  final String gender;
+
+  final String? englishName;
+  final String? englishMeaning;
+  final String? englishReligion;
+  final String? englishLuckyDay;
+  final String? englishLuckyColor;
+  final String? englishLuckyStones;
+  final String? englishLanguage;
+  final String? englishLuckyMetals;
+  final String? englishFamousPerson;
+  final String? englishDescription;
+  final String? englishKnownFor;
+  final String? englishOccopation;
+  final String? urduName;
+  final String? urduMeaning;
+  final String? urduReligion;
+  final String? urduLuckyNumber;
+  final String? urduLuckyDay;
+  final String? urduLuckyColor;
+  final String? urduLuckyStones;
+  final String? urduLanguage;
+  final String? urduLuckyMetals;
+  final String? urduFamousPerson;
+  final String? urduDescription;
+  final String? urduKnownFor;
+  final String? urduOccopation;
+
+  const NameModel({
+    required this.id,
+    required this.key,
+    required this.letter,
+    required this.gender,
     this.englishName,
     this.englishMeaning,
     this.englishReligion,
     this.englishLuckyDay,
-    this.gender,
     this.englishLuckyColor,
-    this.isFavourite,
     this.englishLuckyStones,
     this.englishLanguage,
     this.englishLuckyMetals,
-    this.id,
+    this.englishFamousPerson,
+    this.englishDescription,
+    this.englishKnownFor,
+    this.englishOccopation,
     this.urduName,
     this.urduMeaning,
     this.urduReligion,
@@ -51,77 +74,63 @@ class NameModel {
     this.urduLuckyStones,
     this.urduLanguage,
     this.urduLuckyMetals,
-    this.englishFamousPerson,
     this.urduFamousPerson,
-    this.englishDescription,
-    this.englishKnownFor,
-    this.englishOccopation,
     this.urduDescription,
     this.urduKnownFor,
     this.urduOccopation,
   });
 
-  factory NameModel.fromMap(json) {
+  factory NameModel.fromDb(Map<String, Object?> row) {
     return NameModel(
-      englishName: json['EnglishName'].toString(),
-      englishMeaning: json['EnglishMeaning'].toString(),
-      englishReligion: json['EnglishReligion'].toString(),
-      gender: json["Gender"].toString(),
-      englishLuckyDay: json['EnglishLuckyDay'].toString(),
-      englishLuckyColor: json['EnglishLuckyColor'].toString(),
-      englishLuckyStones: json['EnglishLuckyStones'].toString(),
-      englishLanguage: json['EnglishLanguage'].toString(),
-      englishLuckyMetals: json['EnglishLuckyMetals'].toString(),
-      englishFamousPerson: json['EnglishFamousPerson'].toString(),
-      urduName: json['UrduName'].toString(),
-      urduMeaning: json['UrduMeaning'].toString(),
-      urduReligion: json['UrduReligion'].toString(),
-      urduLuckyNumber: json['UrduLuckyNumber'].toString(),
-      urduLuckyDay: json['UrduLuckyDay'].toString(),
-      urduLuckyColor: json['UrduLuckyColor'].toString(),
-      urduLuckyStones: json['UrduLuckyStones'].toString(),
-      urduLanguage: json['UrduLanguage'].toString(),
-      urduLuckyMetals: json['UrduLuckyMetals'].toString(),
-      urduFamousPerson: json['UrduFamousPerson'].toString(),
-      isFavourite: json['isFavourite'].toString(),
-      englishDescription: json['EnglishDescription'].toString(),
-      englishKnownFor: json['EnglishKnownFor'].toString(),
-      englishOccopation: json['EnglishOccopation'].toString(),
-      urduDescription: json['UrduDescription'].toString(),
-      urduKnownFor: json['UrduKnownFor'].toString(),
-      urduOccopation: json['UrduOccopation'].toString(),
+      id: row['id'] as int,
+      key: row['key'] as String,
+      letter: row['letter'] as String,
+      gender: row['Gender'] as String,
+      englishName: _text(row['EnglishName']),
+      englishMeaning: _text(row['EnglishMeaning']),
+      englishReligion: _text(row['EnglishReligion']),
+      englishLuckyDay: _text(row['EnglishLuckyDay']),
+      englishLuckyColor: _text(row['EnglishLuckyColor']),
+      englishLuckyStones: _text(row['EnglishLuckyStones']),
+      englishLanguage: _text(row['EnglishLanguage']),
+      englishLuckyMetals: _text(row['EnglishLuckyMetals']),
+      englishFamousPerson: _text(row['EnglishFamousPerson']),
+      englishDescription: _text(row['EnglishDescription']),
+      englishKnownFor: _text(row['EnglishKnownFor']),
+      englishOccopation: _text(row['EnglishOccopation']),
+      urduName: _text(row['UrduName']),
+      urduMeaning: _text(row['UrduMeaning']),
+      urduReligion: _text(row['UrduReligion']),
+      urduLuckyNumber: _text(row['UrduLuckyNumber']),
+      urduLuckyDay: _text(row['UrduLuckyDay']),
+      urduLuckyColor: _text(row['UrduLuckyColor']),
+      urduLuckyStones: _text(row['UrduLuckyStones']),
+      urduLanguage: _text(row['UrduLanguage']),
+      urduLuckyMetals: _text(row['UrduLuckyMetals']),
+      urduFamousPerson: _text(row['UrduFamousPerson']),
+      urduDescription: _text(row['UrduDescription']),
+      urduKnownFor: _text(row['UrduKnownFor']),
+      urduOccopation: _text(row['UrduOccopation']),
     );
   }
 
-  Map<String, dynamic> toMap() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['EnglishName'] = englishName;
-    data['EnglishMeaning'] = englishMeaning;
-    data['EnglishReligion'] = englishReligion;
-    data['EnglishLuckyDay'] = englishLuckyDay;
-    data['Gender'] = gender;
-    data['EnglishLuckyColor'] = englishLuckyColor;
-    data['EnglishLuckyStones'] = englishLuckyStones;
-    data['isFavourite'] = isFavourite;
-    data['EnglishLanguage'] = englishLanguage;
-    data['EnglishLuckyMetals'] = englishLuckyMetals;
-    data['UrduName'] = urduName;
-    data['UrduMeaning'] = urduMeaning;
-    data['UrduReligion'] = urduReligion;
-    data['UrduLuckyNumber'] = urduLuckyNumber;
-    data['UrduLuckyDay'] = urduLuckyDay;
-    data['UrduLuckyColor'] = urduLuckyColor;
-    data['UrduLuckyStones'] = urduLuckyStones;
-    data['UrduLanguage'] = urduLanguage;
-    data['UrduLuckyMetals'] = urduLuckyMetals;
-    data['EnglishFamousPerson'] = englishFamousPerson;
-    data['UrduFamousPerson'] = urduFamousPerson;
-    data['EnglishDescription'] = englishDescription;
-    data['EnglishKnownFor'] = englishKnownFor;
-    data['EnglishOccopation'] = englishOccopation;
-    data['UrduDescription'] = urduDescription;
-    data['UrduKnownFor'] = urduKnownFor;
-    data['UrduOccopation'] = urduOccopation;
-    return data;
-  }
+  String get genderEmoji => switch (gender) {
+        'Male' => '👨',
+        'Female' => '👩',
+        _ => '🧑',
+      };
+
+  String get genderLabelAr => switch (gender) {
+        'Male' => 'ذكر',
+        'Female' => 'أنثى',
+        _ => 'للجنسين',
+      };
+
+  String get genderLabelEn => gender;
+
+  @override
+  bool operator ==(Object other) => other is NameModel && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

@@ -1,16 +1,38 @@
 # arabic_names
 
-A new Flutter project.
+Flutter app (Android) for browsing Arabic / Islamic baby names with meanings.
+Published on Google Play as `com.sairatec.arabic_names`.
 
-## Getting Started
+## Run
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
+Debug and profile builds use Google's AdMob test ad units; release builds use the real ones
+(`lib/ads/ad_units.dart`).
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Names data
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The app reads a pre-built SQLite file, `assets/names.db`. It is generated from the source JSON in
+`tool/data_src/`:
+
+```bash
+python3 tool/build_names_db.py
+```
+
+The script fixes key typos and genders, removes duplicates and adds the search/sort columns.
+After changing the data for a release, bump `_dbFile` in `lib/DataBase/names_repository.dart`
+so existing installs copy the new database.
+
+## Layout
+
+| Path | What |
+|------|------|
+| `lib/DataBase/` | `NamesRepository` (read-only names DB), `FavouritesStore` |
+| `lib/Bloc/` | `NamesBloc` (list + search), `FavouriteBloc` |
+| `lib/ui_screens/` | splash, menu, names list, detail, favourites |
+| `lib/widgets/`, `lib/theme/` | shared widgets, dark green/orange theme |
+| `lib/ads/` | banner, interstitial manager, ad unit ids |
+| `ISSUES.md` | known issues and the improvement plan |
