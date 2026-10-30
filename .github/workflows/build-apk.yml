@@ -25,6 +25,15 @@ jobs:
       - name: Fetch packages
         run: flutter pub get
 
+      # android/app/build.gradle pins this NDK; Gradle cannot install it on its
+      # own because the runner has not accepted the SDK licenses.
+      - name: Install Android NDK
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "ndk;29.0.13113456" > /dev/null
+
       # Profile builds are signed with the debug key, so the APK installs
       # without the release keystore (which must not live in the repo).
       # On failure the tail of the log is copied into an annotation, which is
